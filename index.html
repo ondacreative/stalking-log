@@ -131,9 +131,12 @@
       <h2 id="nowTitle">Stalking conditions</h2>
       <span class="sub" id="nowAge"></span>
     </div>
-    <div id="nowBody" class="sub">Tap <b>Use my location</b> to see the best times and the wind where you are.</div>
     <div class="actions">
+      <div class="chips" id="nowPlaces"></div>
       <button class="ghost" type="button" id="nowGps">Use my location</button>
+    </div>
+    <div id="nowBody" class="sub">Getting the weather…</div>
+    <div class="actions">
       <button class="ghost" type="button" id="nowRefresh" hidden>Refresh</button>
     </div>
   </section>
@@ -373,6 +376,19 @@
   // ---------- wind and light now
   let nowDoc = null, nowAt = null, nowBusy = false;
   try { nowAt = JSON.parse(store.get("ds_now_at") || "null"); } catch {}
+  // Set places, for when the phone's location is off or blocked.
+  const NOW_PLACES = [
+    { name: "Leek", lat: 53.105, lon: -2.026 },
+    { name: "Rocester", lat: 52.951, lon: -1.835 },
+  ];
+  function drawNowPlaces() {
+    $("nowPlaces").replaceChildren(...NOW_PLACES.map(pl => chip(pl.name, !!nowAt && nowAt.name === pl.name, () => {
+      nowAt = { name: pl.name, lat: pl.lat, lon: pl.lon, label: `For ${pl.name}.` };
+      store.set("ds_now_at", JSON.stringify(nowAt));
+      drawNowPlaces();
+      refreshNow();
+    })));
+  }
 
   function arrow(from) {
     // Points the way the wind blows: from "W" the arrow heads east.
@@ -459,8 +475,9 @@
     b.disabled = true; b.textContent = "Finding you…";
     try {
       const p = await locate();
-      nowAt = { lat: p.lat, lon: p.lon, label: `For where you were at ${nowParts().time}.` };
+      nowAt = { name: "", lat: p.lat, lon: p.lon, label: `For where you were at ${nowParts().time}.` };
       store.set("ds_now_at", JSON.stringify(nowAt));
+      drawNowPlaces();
       await refreshNow();
     } catch (e) {
       $("nowBody").className = "status"; $("nowBody").textContent = e.message;
@@ -735,7 +752,10 @@
     GitHubStore.token.set(linkKey.trim());
     history.replaceState(null, "", location.pathname + location.search);
   }
-  if (nowAt) { nowAt.label = "For the last place you checked. Tap Use my location to update."; refreshNow(); }
+  if (!nowAt) nowAt = { ...NOW_PLACES[0], label: `For ${NOW_PLACES[0].name}.` };
+  else if (!nowAt.name) nowAt.label = "For the last place you checked. Tap Use my location to update.";
+  drawNowPlaces();
+  refreshNow();
   db.collection("culls").onSnapshot(snap => {
     culls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     render(); fillConditions();
