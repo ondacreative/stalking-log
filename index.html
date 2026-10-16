@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3f5a36">
+<title>Stalking Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+  /* Layout: one phone-width column. Wind and light up top, big "Add a deer" action, then deer cards newest first. */
+  :root {
+    --bg: #f0eee8;          /* stone */
+    --card: #ffffff;
+    --fg: #1f2119;          /* peat */
+    --muted: #5e6155;
+    --line: #d9d6cb;
+    --accent: #3f5a36;      /* moss */
+    --accent-fg: #ffffff;
+    --bronze: #8f4f1e;      /* bracken */
+    --soft: #e7e5dc;
+    --warn: #9b2c1f;
+    --font: "Atkinson Hyperlegible", "Verdana", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12140f; --card: #1b1e17; --fg: #e9e9e1; --muted: #a9ab9e; --line: #34382d;
+      --accent: #9cc28c; --accent-fg: #10140d; --bronze: #e09b5f; --soft: #252a20; --warn: #f08a7a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12140f; --card: #1b1e17; --fg: #e9e9e1; --muted: #a9ab9e; --line: #34382d;
+    --accent: #9cc28c; --accent-fg: #10140d; --bronze: #e09b5f; --soft: #252a20; --warn: #f08a7a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 18px/1.55 var(--font); }
+  .wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 48px; display: grid; gap: 22px; }
+  h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; }
+  h2 { font-size: 1.15rem; margin: 0 0 8px; }
+  .sub { color: var(--muted); font-size: 0.9rem; }
+  button { font: inherit; border-radius: 10px; border: 2px solid transparent; cursor: pointer; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--bronze); outline-offset: 2px; }
+  .primary { background: var(--accent); color: var(--accent-fg); font-weight: 700; font-size: 1.15rem; padding: 14px 18px; width: 100%; }
+  .ghost { background: transparent; color: var(--accent); border-color: var(--accent); padding: 8px 14px; font-weight: 700; }
+  .danger { background: transparent; color: var(--warn); border-color: var(--warn); padding: 8px 14px; font-weight: 700; }
+  .wide { width: 100%; padding: 12px 18px; }
+
+  /* Form */
+  form { background: var(--card); border-radius: 14px; padding: 16px; display: grid; gap: 18px; border: 1px solid var(--line); }
+  fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+  legend, label.lab { font-weight: 700; padding: 0; }
+  .hint { color: var(--muted); font-size: 0.85rem; }
+  input[type=text], input[type=number], input[type=date], input[type=time], input[type=password], textarea {
+    font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0;
+  }
+  textarea { min-height: 80px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--soft); color: var(--fg); padding: 8px 14px; border-color: var(--line); }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; }
+  .spotok { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+  .spoterr { color: var(--warn); font-weight: 700; font-size: 0.9rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .actions .primary { flex: 1 1 200px; width: auto; }
+  .confirm { background: var(--soft); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+  .preview { max-height: 180px; border-radius: 10px; }
+  .status { color: var(--warn); font-weight: 700; }
+
+  /* Right now */
+  .nowcard { background: var(--card); border: 2px solid var(--accent); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+  .nowcard h2 { margin: 0; }
+  .top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .top > div { min-width: 0; }
+  .wind { display: flex; gap: 14px; align-items: center; }
+  .wind svg { flex: none; width: 64px; height: 64px; }
+  .wind .big { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+  .nowlines { display: grid; gap: 4px; }
+  .windnext { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  .windnext span { background: var(--soft); border-radius: 8px; padding: 2px 8px; }
+  .stale { color: var(--warn); font-weight: 700; font-size: 0.95rem; }
+
+  /* Tally */
+  .tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tcard { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .tcard .sp { color: var(--muted); font-size: 0.9rem; }
+  .tcard .n { font-size: 1.5rem; font-weight: 700; color: var(--bronze); font-variant-numeric: tabular-nums; }
+
+  /* Deer cards */
+  .list { display: grid; gap: 12px; }
+  .deer { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+  .what { font-size: 1.25rem; font-weight: 700; }
+  .when { color: var(--muted); font-size: 0.95rem; }
+  .photo { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; min-width: 0; }
+  .pending { background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; }
+  .links { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.95rem; }
+  .links a { color: var(--accent); font-weight: 700; }
+  .empty { background: var(--card); border: 2px dashed var(--line); border-radius: 14px; padding: 18px; color: var(--muted); }
+  details > summary { cursor: pointer; color: var(--accent); font-weight: 700; padding: 4px 0; }
+  details[open] > summary { margin-bottom: 6px; }
+
+  .setup { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .setup[open] { display: grid; gap: 10px; }
+  .setup.done { background: transparent; border: 0; padding: 0; }
+  .setup.done > summary { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
+  .setup ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Stalking Log</h1>
+    <div class="sub" id="count">Loading…</div>
+  </header>
+
+  <section class="nowcard" aria-labelledby="nowTitle">
+    <div class="top">
+      <h2 id="nowTitle">Wind and light now</h2>
+      <span class="sub" id="nowAge"></span>
+    </div>
+    <div id="nowBody" class="sub">Tap <b>Use my location</b> to see the wind where you are.</div>
+    <div class="actions">
+      <button class="ghost" type="button" id="nowGps">Use my location</button>
+      <button class="ghost" type="button" id="nowRefresh" hidden>Refresh</button>
+    </div>
+  </section>
+
+  <div id="status" class="status" hidden></div>
+
+  <button class="primary" id="openForm" type="button" hidden>+ Add a deer</button>
+
+  <form id="form" hidden novalidate>
+    <h2 id="formTitle">Add a deer</h2>
+
+    <fieldset>
+      <legend>Species</legend>
+      <div class="chips" id="speciesChips"></div>
+      <input type="text" id="speciesOther" placeholder="Other species" aria-label="Other species" hidden>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sex</legend>
+      <div class="chips" id="sexChips"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Age</legend>
+      <div class="chips" id="ageChips"></div>
+    </fieldset>
+
+    <fieldset>
+      <label class="lab" for="kg">Larder weight in kg (optional)</label>
+      <input type="number" id="kg" inputmode="decimal" min="0" max="300" step="0.1">
+    </fieldset>
+
+    <fieldset>
+      <legend>When</legend>
+      <div class="row">
+        <input type="date" id="date" aria-label="Date">
+        <input type="time" id="time" aria-label="Time">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Where</legend>
+      <button class="ghost wide" type="button" id="gps">Use my location</button>
+      <div class="chips" id="spotChips"></div>
+      <label class="lab" for="coords">Or paste coordinates</label>
+      <input type="text" id="coords" placeholder="56.123456, -3.987654" autocomplete="off">
+      <div id="coordsMsg" aria-live="polite"></div>
+      <label class="lab" for="ground">Ground (optional)</label>
+      <input type="text" id="ground" placeholder="e.g. Home farm, top wood">
+    </fieldset>
+
+    <fieldset>
+      <legend>Shot (optional)</legend>
+      <label class="lab" for="distance">Distance in metres</label>
+      <input type="number" id="distance" inputmode="numeric" min="0" max="1000">
+      <div class="lab">Placement</div>
+      <div class="chips" id="placeChips"></div>
+      <label class="lab" for="rifle">Rifle or calibre</label>
+      <div class="chips" id="rifleChips"></div>
+      <input type="text" id="rifle" placeholder="e.g. .243">
+    </fieldset>
+
+    <fieldset>
+      <label class="lab" for="notes">Notes (optional)</label>
+      <textarea id="notes" placeholder="e.g. Came out of the rides at first light."></textarea>
+    </fieldset>
+
+    <fieldset id="photoSet" hidden>
+      <label class="lab" for="photo">Photo (optional)</label>
+      <input type="file" id="photo" accept="image/*">
+      <img id="photoPreview" class="preview" alt="Photo preview" hidden>
+    </fieldset>
+
+    <div id="formErr" class="status" aria-live="polite"></div>
+
+    <div class="actions">
+      <button class="primary" type="submit" id="save">Save deer</button>
+      <button class="ghost" type="button" id="cancel">Cancel</button>
+      <button class="danger" type="button" id="del" hidden>Delete</button>
+    </div>
+    <div class="confirm" id="confirmDel" hidden>
+      <div>Delete this deer for good?</div>
+      <div class="actions">
+        <button class="danger" type="button" id="delYes">Yes, delete</button>
+        <button class="ghost" type="button" id="delNo">Keep it</button>
+      </div>
+    </div>
+  </form>
+
+  <section>
+    <h2>Tally</h2>
+    <div class="tally" id="tally"><div class="empty">Your count of each species will show here.</div></div>
+  </section>
+
+  <section>
+    <h2>Deer</h2>
+    <div class="list" id="list"><div class="empty">No deer yet. Tap <b>Add a deer</b> after your next one.</div></div>
+  </section>
+
+  <details class="setup" id="setup">
+    <summary id="setupSum">Saving from this phone</summary>
+    <div id="keyState" class="sub"></div>
+    <details id="keyHelp">
+      <summary>How to set it up</summary>
+      <ol>
+        <li>On GitHub, open <b>Settings</b>, then <b>Developer settings</b>, then <b>Fine-grained tokens</b>.</li>
+        <li>Tap <b>Generate new token</b>. Name it "Stalking log".</li>
+        <li>Expiration: pick the longest. Repository access: <b>Only select repositories</b>, then <b id="repoName">this log's repository</b>.</li>
+        <li>Permissions: <b>Contents</b>, set to <b>Read and write</b>.</li>
+        <li>Generate it, copy it, and paste it below.</li>
+      </ol>
+    </details>
+    <label class="lab" for="keyIn">GitHub key</label>
+    <input type="password" id="keyIn" autocomplete="off" placeholder="github_pat_…">
+    <div class="actions">
+      <button class="ghost" type="button" id="keySave">Save key</button>
+      <button class="danger" type="button" id="keyForget" hidden>Forget key</button>
+    </div>
+    <div class="hint">The key stays on this phone only. Anyone with the link can read the log. Only this key can change it.</div>
+  </details>
+
+  <p class="sub">Weather, wind, sunrise and sunset: Open-Meteo.
+    Shooting hours shown are the England and Wales rule. Check the rules where you stalk.</p>
+</div>
+
+<script src="conditions.js"></script>
+<script src="store.js"></script>
+<script>
+(() => {
+  const SPECIES = ["Roe", "Red", "Fallow", "Muntjac", "Sika", "Chinese water deer"];
+  // Stag and hind for the big deer, buck and doe for the rest.
+  const SEXES = { Red: ["Stag", "Hind"], Sika: ["Stag", "Hind"] };
+  const sexesFor = sp => SEXES[sp] || (SPECIES.includes(sp) ? ["Buck", "Doe"] : ["Male", "Female"]);
+  const AGES = ["Young", "Yearling", "Adult"];
+  const PLACES = ["Heart and lungs", "Neck", "Head", "Other"];
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  let db = GitHubStore.db, assets = null, canWrite = false;
+  let culls = [];                 // [{id, ...data}]
+  let editing = null;             // id being edited, or null
+  let species = "", sex = "", age = "", place = "", photoBlob = null;
+
+  // ---------- helpers
+  const pad = n => String(n).padStart(2, "0");
+  const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  function nowParts() {
+    const d = new Date();
+    return { date: isoDate(d), time: `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+  }
+  function parseCoords(text) {
+    const m = String(text).trim().match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+    if (!m) return null;
+    const lat = Number(m[1]), lon = Number(m[2]);
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    return { lat, lon };
+  }
+  function dayLabel(date) {
+    return new Date(date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  }
+  const byNewest = (a, b) => (b.date + b.time).localeCompare(a.date + a.time);
+  const num = v => (typeof v === "number" && isFinite(v)) ? v : null;
+  const addMins = (hhmm, mins) => {
+    const [h, m] = hhmm.split(":").map(Number), t = (h * 60 + m + mins + 1440) % 1440;
+    return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+  };
+
+  // Ask the phone where it is. Resolves {lat, lon, accuracy} or rejects with a plain message.
+  function locate() {
+    return new Promise((res, rej) => {
+      if (!navigator.geolocation) return rej(new Error("This phone can't share its location."));
+      navigator.geolocation.getCurrentPosition(
+        p => res({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }),
+        e => rej(new Error(e.code === 1 ? "Location is blocked. Allow it for this page in your browser settings."
+          : "Couldn't get your location. Try again in the open.")),
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+    });
+  }
+
+  // ---------- render
+  function render() {
+    const n = culls.length;
+    $("count").textContent = n ? `${n} deer logged` : "No deer logged yet";
+    renderTally();
+    renderList();
+  }
+
+  function renderTally() {
+    const t = {};
+    for (const c of culls) {
+      const k = c.species || "Unknown";
+      t[k] = t[k] || { n: 0, sexes: {} };
+      t[k].n++;
+      if (c.sex) t[k].sexes[c.sex] = (t[k].sexes[c.sex] || 0) + 1;
+    }
+    const keys = Object.keys(t).sort((a, b) => t[b].n - t[a].n || a.localeCompare(b));
+    $("tally").innerHTML = keys.length ? keys.map(k => {
+      const split = Object.entries(t[k].sexes).map(([s, n]) => `${n} ${s.toLowerCase()}${n === 1 ? "" : "s"}`).join(", ");
+      return `<div class="tcard"><div class="sp">${esc(k)}</div><div class="n">${t[k].n}</div><div class="sub">${esc(split)}</div></div>`;
+    }).join("") : `<div class="empty">Your count of each species will show here.</div>`;
+  }
+
+  function conditionsHtml(k) {
+    if (!k) return `<div class="pending">${canWrite ? "Working out conditions…" : "Conditions not worked out yet."}</div>`;
+    const f = (v, d = 0) => num(v) !== null ? v.toFixed(d) : "–";
+    const pch = num(k.pressure_change_24h) !== null ? `, ${k.pressure_change_24h >= 0 ? "+" : ""}${f(k.pressure_change_24h)} in 24h` : "";
+    return `<dl>
+      <dt>Wind</dt><dd>From the ${esc(k.wind_from) || "–"}, ${f(k.wind_kmh)} km/h, gusts ${f(k.gust_kmh)}</dd>
+      <dt>Air</dt><dd>${f(k.air_temp_c)} °C, cloud ${f(k.cloud_pct)}%</dd>
+      <dt>Rain</dt><dd>${f(k.rain_24h_mm, 1)} mm in 24h</dd>
+      <dt>Pressure</dt><dd>${f(k.pressure_hpa)} hPa${pch}</dd>
+      <dt>Light</dt><dd>${esc(k.light)}</dd>
+      <dt>Moon</dt><dd>${f(k.moon_pct)}%, ${esc(k.moon_phase)}</dd>
+    </dl>${k.data_note ? `<div class="sub">${esc(k.data_note)}</div>` : ""}`;
+  }
+
+  function renderList() {
+    if (!culls.length) {
+      $("list").innerHTML = `<div class="empty">No deer yet. Tap <b>Add a deer</b> after your next one.</div>`;
+      return;
+    }
+    $("list").innerHTML = [...culls].sort(byNewest).map(c => {
+      const title = [c.species, c.sex ? c.sex.toLowerCase() : ""].filter(Boolean).join(" ");
+      const facts = [c.age, num(c.kg) !== null ? `${c.kg} kg larder` : ""].filter(Boolean).map(esc).join(" · ");
+      const shot = [num(c.distance) !== null ? `${c.distance} m` : "", c.place, c.rifle].filter(Boolean).map(esc).join(" · ");
+      const photo = c.photo ? `<img class="photo" src="${esc(GitHubStore.photoUrl(c.photo))}" alt="${esc(title)}" loading="lazy" onerror="this.hidden=true">` : "";
+      const map = typeof c.lat === "number" ? `<a href="https://www.google.com/maps?q=${c.lat},${c.lon}" target="_blank" rel="noopener">Open in Maps</a>` : "";
+      const edit = canWrite ? `<button class="ghost" type="button" data-edit="${esc(c.id)}">Edit</button>` : "";
+      const k = c.conditions;
+      const brief = k && k.wind_from ? ` · wind from the ${esc(k.wind_from)}` : "";
+      return `<article class="deer">
+        <div class="top"><div>
+          <div class="what">${esc(title)}</div>
+          ${facts ? `<div>${facts}</div>` : ""}
+          <div class="when">${esc(dayLabel(c.date))}, ${esc(c.time)}${c.ground ? ` · ${esc(c.ground)}` : ""}${brief}</div>
+          ${shot ? `<div class="when">${shot}</div>` : ""}
+        </div>${edit}</div>
+        ${photo}
+        ${c.notes ? `<div>${esc(c.notes)}</div>` : ""}
+        <details><summary>Conditions at ${esc(c.time)}</summary>${conditionsHtml(k)}</details>
+        <div class="links">${map}</div>
+      </article>`;
+    }).join("");
+  }
+
+  // ---------- wind and light now
+  let nowDoc = null, nowAt = null, nowBusy = false;
+  try { nowAt = JSON.parse(store.get("ds_now_at") || "null"); } catch {}
+
+  function arrow(from) {
+    // Points the way the wind blows: from "W" the arrow heads east.
+    const deg = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 }[from];
+    if (deg === undefined) return "";
+    return `<svg viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/>
+      <text x="32" y="13" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--font)">N</text>
+      <g transform="rotate(${deg + 180} 32 32)"><path d="M32 14 L40 30 L34 28 L34 50 L30 50 L30 28 L24 30 Z" fill="var(--accent)"/></g>
+    </svg>`;
+  }
+
+  function renderNow() {
+    if (!nowDoc) return;
+    const k = nowDoc;
+    const mins = (Date.now() - new Date(k.updated)) / 60e3;
+    const d = new Date(k.updated);
+    $("nowAge").textContent = `Updated ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const stale = mins > 60 ? `<div class="stale">This is over an hour old. Tap Refresh.</div>` : "";
+    const next = (k.wind_next || []).map(h => `<span>${esc(h.at)} ${esc(h.from)} ${h.kmh}</span>`).join("");
+    const legal = k.sunrise && k.sunset ? `${addMins(k.sunrise, -60)} to ${addMins(k.sunset, 60)}` : "–";
+    $("nowBody").className = "";
+    $("nowBody").innerHTML = `${stale}
+      <div class="wind">${arrow(k.wind_from)}
+        <div><div class="big">From the ${esc(k.wind_from)}</div>
+        <div>${Math.round(k.wind_kmh)} km/h, gusts ${Math.round(k.gust_kmh)}</div></div>
+      </div>
+      ${next ? `<div class="sub">Next hours (km/h):</div><div class="windnext">${next}</div>` : ""}
+      <div class="nowlines">
+        <div><b>Light</b> ${esc(k.light)}. Sunrise ${esc(k.sunrise)}, sunset ${esc(k.sunset)}</div>
+        <div><b>Shooting hours</b> ${esc(legal)}</div>
+        ${k.sunrise_tomorrow ? `<div><b>Sunrise tomorrow</b> ${esc(k.sunrise_tomorrow)}</div>` : ""}
+        <div><b>Air</b> ${Math.round(k.air_temp_c)} °C, cloud ${Math.round(k.cloud_pct)}%${k.raining ? ", raining" : ""}</div>
+        <div><b>Moon</b> ${k.moon_pct}%, ${esc(k.moon_phase)}</div>
+      </div>
+      <div class="sub">${esc(nowAt.label)}</div>`;
+  }
+
+  async function refreshNow() {
+    if (nowBusy || !nowAt) return;
+    nowBusy = true;
+    $("nowRefresh").disabled = true; $("nowRefresh").textContent = "Getting…";
+    try {
+      nowDoc = await Conditions.now(nowAt.lat, nowAt.lon);
+      renderNow();
+    } catch {
+      if (!nowDoc) { $("nowBody").className = "status"; $("nowBody").textContent = "Couldn't get the weather. Check your signal, then tap Refresh."; }
+      else $("nowAge").textContent = "Refresh failed. Showing older figures.";
+    } finally {
+      nowBusy = false;
+      $("nowRefresh").disabled = false; $("nowRefresh").textContent = "Refresh";
+      $("nowRefresh").hidden = false;
+    }
+  }
+
+  async function nowHere() {
+    const b = $("nowGps");
+    b.disabled = true; b.textContent = "Finding you…";
+    try {
+      const p = await locate();
+      nowAt = { lat: p.lat, lon: p.lon, label: `For where you were at ${nowParts().time}.` };
+      store.set("ds_now_at", JSON.stringify(nowAt));
+      await refreshNow();
+    } catch (e) {
+      $("nowBody").className = "status"; $("nowBody").textContent = e.message;
+    } finally {
+      b.disabled = false; b.textContent = "Use my location";
+    }
+  }
+
+  // ---------- form
+  function chip(label, pressed, onClick) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = label;
+    b.setAttribute("aria-pressed", pressed ? "true" : "false");
+    b.addEventListener("click", onClick);
+    return b;
+  }
+  function drawChips(box, options, current, pick) {
+    $(box).replaceChildren(...options.map(o => chip(o, current === o, () => pick(current === o ? "" : o))));
+  }
+
+  function currentSpecies() {
+    return species === "_other" ? $("speciesOther").value.trim() : species;
+  }
+  function drawSpecies() {
+    const box = $("speciesChips"); box.replaceChildren();
+    for (const s of SPECIES) box.append(chip(s, species === s, () => { species = s; $("speciesOther").hidden = true; drawForm(); }));
+    box.append(chip("Other", species === "_other", () => { species = "_other"; $("speciesOther").hidden = false; $("speciesOther").focus(); drawForm(); }));
+  }
+  function drawForm() {
+    drawSpecies();
+    const sexes = sexesFor(currentSpecies());
+    // Switching between stag/hind and buck/doe species: carry male/female across.
+    if (sex && !sexes.includes(sex)) {
+      const male = ["Stag", "Buck", "Male"].includes(sex);
+      sex = male ? sexes[0] : sexes[1];
+    }
+    drawChips("sexChips", sexes, sex, v => { sex = v; drawForm(); });
+    drawChips("ageChips", AGES, age, v => { age = v; drawForm(); });
+    drawChips("placeChips", PLACES, place, v => { place = v; drawForm(); });
+    drawRifles();
+  }
+  function drawRifles() {
+    const seen = [];
+    for (const c of [...culls].sort(byNewest)) if (c.rifle && !seen.includes(c.rifle)) seen.push(c.rifle);
+    $("rifleChips").replaceChildren(...seen.slice(0, 4).map(r => chip(r, $("rifle").value === r, () => { $("rifle").value = r; drawRifles(); })));
+  }
+
+  function spotsFromCulls() {
+    // distinct places, newest first, merged within ~50 m
+    const out = [];
+    for (const c of [...culls].sort(byNewest)) {
+      if (typeof c.lat !== "number") continue;
+      const near = out.find(s => Math.abs(s.lat - c.lat) < 0.00045 && Math.abs(s.lon - c.lon) < 0.0007);
+      if (near) { if (!near.name && c.ground) near.name = c.ground; continue; }
+      out.push({ lat: c.lat, lon: c.lon, name: c.ground || "", date: c.date });
+    }
+    return out.slice(0, 6);
+  }
+  function drawSpots() {
+    const box = $("spotChips"); box.replaceChildren();
+    const cur = parseCoords($("coords").value);
+    spotsFromCulls().forEach(s => {
+      const picked = cur && cur.lat === s.lat && cur.lon === s.lon;
+      box.append(chip(s.name || `Spot from ${dayLabel(s.date)}`, picked, () => {
+        $("coords").value = `${s.lat}, ${s.lon}`;
+        if (s.name && !$("ground").value) $("ground").value = s.name;
+        showCoords(); drawSpots();
+      }));
+    });
+  }
+  function showCoords() {
+    const msg = $("coordsMsg"), v = $("coords").value.trim();
+    if (!v) { msg.textContent = ""; msg.className = ""; return null; }
+    const p = parseCoords(v);
+    if (p) { msg.textContent = `Got it: ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`; msg.className = "spotok"; }
+    else { msg.textContent = "Those don't look like coordinates. Copy the numbers, not a share link."; msg.className = "spoterr"; }
+    return p;
+  }
+  async function formHere() {
+    const b = $("gps"), msg = $("coordsMsg");
+    b.disabled = true; b.textContent = "Finding you…";
+    try {
+      const p = await locate();
+      $("coords").value = `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`;
+      showCoords(); drawSpots();
+      msg.textContent += `, to within ${Math.round(p.accuracy)} m`;
+    } catch (e) {
+      msg.textContent = `${e.message} Or paste coordinates.`; msg.className = "spoterr";
+    } finally {
+      b.disabled = false; b.textContent = "Use my location";
+    }
+  }
+
+  function openForm(c) {
+    editing = c ? c.id : null;
+    $("formTitle").textContent = c ? "Edit deer" : "Add a deer";
+    $("save").textContent = c ? "Save changes" : "Save deer";
+    const now = nowParts();
+    const sp = c ? (c.species || "") : (store.get("ds_species") || "Roe");
+    species = SPECIES.includes(sp) || !sp ? sp : "_other";
+    $("speciesOther").value = species === "_other" ? sp : "";
+    $("speciesOther").hidden = species !== "_other";
+    sex = c ? (c.sex || "") : ""; age = c ? (c.age || "") : ""; place = c ? (c.place || "") : "";
+    $("kg").value = c && num(c.kg) !== null ? c.kg : "";
+    $("date").value = c ? c.date : now.date;
+    $("time").value = c ? c.time : now.time;
+    $("coords").value = c && typeof c.lat === "number" ? `${c.lat}, ${c.lon}` : "";
+    $("ground").value = c ? (c.ground || "") : "";
+    $("distance").value = c && num(c.distance) !== null ? c.distance : "";
+    $("rifle").value = c ? (c.rifle || "") : (store.get("ds_rifle") || "");
+    $("notes").value = c ? (c.notes || "") : "";
+    $("photo").value = ""; photoBlob = null;
+    $("photoPreview").hidden = !(c && c.photo);
+    if (c && c.photo) $("photoPreview").src = GitHubStore.photoUrl(c.photo);
+    $("del").hidden = !c; $("confirmDel").hidden = true; $("formErr").textContent = "";
+    drawForm(); drawSpots(); showCoords();
+    $("form").hidden = false; $("openForm").hidden = true;
+    $("form").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function closeForm() {
+    $("form").hidden = true; $("openForm").hidden = !canWrite; editing = null;
+  }
+
+  async function shrinkPhoto(file) {
+    // Phone photos are large; keep the long side at 1600 px.
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * scale); cv.height = Math.round(img.naturalHeight * scale);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+      return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", 0.85));
+    } catch { return file; } finally { URL.revokeObjectURL(url); }
+  }
+
+  function saveError(e) {
+    if (e && e.code === "bad_key") return "GitHub refused the save. Check the key at the bottom of the page.";
+    if (e && e.code === "local") return "This copy is opened from a computer, so it can't save.";
+    return "That didn't save. Check your signal and try again.";
+  }
+
+  async function save(ev) {
+    ev.preventDefault();
+    const err = $("formErr"); err.textContent = "";
+    let sp = currentSpecies();
+    if (!sp) { err.textContent = "Pick a species."; return; }
+    sp = sp.charAt(0).toUpperCase() + sp.slice(1);
+    if (!sex) { err.textContent = "Pick the sex."; return; }
+    const p = showCoords();
+    if (!p) { err.textContent = "Add where it was: tap Use my location, pick a spot or paste coordinates."; return; }
+    if (!$("date").value || !$("time").value) { err.textContent = "Add the date and time."; return; }
+    const kg = $("kg").value.trim(), dist = $("distance").value.trim();
+
+    const body = {
+      date: $("date").value, time: $("time").value, species: sp, sex, age,
+      kg: kg === "" ? null : Math.round(Number(kg) * 10) / 10,
+      lat: p.lat, lon: p.lon, ground: $("ground").value.trim(),
+      distance: dist === "" ? null : Math.round(Number(dist)), place, rifle: $("rifle").value.trim(),
+      notes: $("notes").value.trim(),
+    };
+    const old = editing ? culls.find(c => c.id === editing) : null;
+    // Conditions depend on time and place; clear them if either changed.
+    const moved = !old || old.date !== body.date || old.time !== body.time || old.lat !== body.lat || old.lon !== body.lon;
+    body.conditions = moved ? null : (old.conditions ?? null);
+    body.photo = old ? (old.photo || "") : "";
+    body.created = old ? (old.created || new Date().toISOString()) : new Date().toISOString();
+
+    $("save").disabled = true; $("save").textContent = "Saving…";
+    try {
+      if (photoBlob && assets) {
+        try { body.photo = (await assets.upload(photoBlob)).id; }
+        catch { err.textContent = "The photo didn't upload, so the deer was saved without it."; }
+      }
+      const ref = editing ? db.collection("culls").doc(editing) : db.collection("culls").doc();
+      await ref.set(body);
+      store.set("ds_species", sp); store.set("ds_rifle", body.rifle);
+      if (!err.textContent) closeForm();
+    } catch (e) {
+      err.textContent = saveError(e);
+    } finally {
+      $("save").disabled = false; $("save").textContent = editing ? "Save changes" : "Save deer";
+    }
+  }
+
+  async function remove() {
+    if (!editing) return;
+    try { await db.collection("culls").doc(editing).delete(); closeForm(); }
+    catch { $("formErr").textContent = "That didn't delete. Try again."; }
+  }
+
+  // ---------- conditions for each deer, worked out here and saved
+  let filling = false;
+  const tried = new Set();
+  function needsConditions(d) {
+    if (new Date(`${d.date}T${d.time}`) > new Date()) return false;       // not happened yet
+    const k = d.conditions;
+    if (!k) return true;
+    // Recent figures get revised: redo them once a day until they settle.
+    return !!k.data_note && k.added !== nowParts().date;
+  }
+  async function fillConditions() {
+    if (!canWrite || filling) return;
+    filling = true;
+    try {
+      const todo = culls.filter(d => !tried.has(d.id) && needsConditions(d)).slice(0, 10);
+      const patches = {};
+      for (const d of todo) {
+        tried.add(d.id);
+        try { patches[d.id] = { conditions: await Conditions.forCull(d.date, d.time, d.lat, d.lon) }; }
+        catch (e) { console.warn("conditions failed for", d.id, e); }
+      }
+      if (Object.keys(patches).length) await db.collection("culls").updateMany(patches);
+    } catch (e) {
+      console.warn("saving conditions failed", e);
+    } finally {
+      filling = false;
+    }
+  }
+
+  // ---------- saving key
+  async function showKey() {
+    const R = GitHubStore.REPO;
+    if (R) $("repoName").textContent = R.repo;
+    const has = !!GitHubStore.token.get();
+    const ok = await GitHubStore.checkKey();
+    canWrite = !!R && has && ok !== false;
+    $("openForm").hidden = !canWrite || !$("form").hidden;
+    assets = canWrite ? GitHubStore.assets : null;
+    $("photoSet").hidden = !assets;
+    $("keyForget").hidden = !has;
+    $("keyHelp").open = !has;
+    $("keyState").textContent = !R ? "Opened from a computer. Saving only works on the GitHub page." :
+      !has ? "Not set up. You can look, but not save." :
+      ok === false ? "This key doesn't work. Make a new one and paste it below." :
+      ok === null ? "Key saved. Couldn't check it just now." : "Set up. This phone can save to the log.";
+    $("keyState").className = ok === false ? "status" : "sub";
+    // Once it works, shrink to one quiet line. Otherwise keep it open and obvious.
+    const done = canWrite;
+    $("setup").classList.toggle("done", done);
+    $("setup").open = !done;
+    $("setupSum").textContent = done ? "Saving is set up on this phone" : "Saving from this phone";
+    render();
+    fillConditions();
+  }
+
+  // ---------- wiring
+  $("openForm").addEventListener("click", () => openForm(null));
+  $("cancel").addEventListener("click", closeForm);
+  $("form").addEventListener("submit", save);
+  $("gps").addEventListener("click", formHere);
+  $("coords").addEventListener("input", () => { showCoords(); drawSpots(); });
+  $("speciesOther").addEventListener("input", drawForm);
+  $("rifle").addEventListener("input", drawRifles);
+  $("del").addEventListener("click", () => { $("confirmDel").hidden = false; });
+  $("delNo").addEventListener("click", () => { $("confirmDel").hidden = true; });
+  $("delYes").addEventListener("click", remove);
+  $("photo").addEventListener("change", async () => {
+    const f = $("photo").files[0];
+    if (!f) { photoBlob = null; return; }
+    photoBlob = await shrinkPhoto(f);
+    $("photoPreview").src = URL.createObjectURL(photoBlob); $("photoPreview").hidden = false;
+  });
+  $("list").addEventListener("click", e => {
+    const id = e.target.closest("[data-edit]")?.dataset.edit;
+    if (id) openForm(culls.find(c => c.id === id));
+  });
+  $("keySave").addEventListener("click", async () => {
+    const v = $("keyIn").value.trim();
+    if (!v) return;
+    GitHubStore.token.set(v); $("keyIn").value = "";
+    await showKey();
+  });
+  $("keyForget").addEventListener("click", () => { GitHubStore.token.clear(); showKey(); });
+  $("nowGps").addEventListener("click", nowHere);
+  $("nowRefresh").addEventListener("click", refreshNow);
+  document.addEventListener("visibilitychange", () => {
+    // Coming back to the page after a while: fetch fresh figures.
+    if (document.visibilityState === "visible" && nowDoc && Date.now() - new Date(nowDoc.updated) > 30 * 60e3) refreshNow();
+  });
+  setInterval(renderNow, 5 * 60e3);   // keeps the "over an hour old" warning honest
+
+  // ---------- start
+  if (nowAt) { nowAt.label = "For the last place you checked. Tap Use my location to update."; refreshNow(); }
+  db.collection("culls").onSnapshot(snap => {
+    culls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render(); fillConditions();
+  }, () => {
+    $("status").hidden = false;
+    $("status").textContent = "Couldn't load the log. Check your signal, then reload the page.";
+  });
+  showKey();
+})();
+</script>
+</body>
+</html>
