@@ -727,6 +727,12 @@
   setInterval(renderNow, 5 * 60e3);   // keeps the "over an hour old" warning honest
 
   // ---------- start
+  // Set-up link: page address + "#key=<token>". Save the key on this phone, then drop it from the address bar.
+  const linkKey = new URLSearchParams(location.hash.slice(1)).get("key");
+  if (linkKey) {
+    GitHubStore.token.set(linkKey.trim());
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   if (nowAt) { nowAt.label = "For the last place you checked. Tap Use my location to update."; refreshNow(); }
   db.collection("culls").onSnapshot(snap => {
     culls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
