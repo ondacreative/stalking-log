@@ -84,6 +84,15 @@
   .windnext { display: flex; gap: 6px; flex-wrap: wrap; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
   .windnext span { background: var(--soft); border-radius: 8px; padding: 2px 8px; }
   .stale { color: var(--warn); font-weight: 700; font-size: 0.95rem; }
+  .rating { display: inline-block; border-radius: 6px; padding: 0 10px; font-weight: 700; color: var(--card); }
+  .rating.Good { background: var(--accent); }
+  .rating.Fair { background: var(--bronze); }
+  .rating.Poor { background: var(--muted); }
+  .outings { display: grid; gap: 8px; }
+  .outing { background: var(--soft); border-radius: 10px; padding: 8px 12px; display: grid; gap: 2px; }
+  .outing .head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .rules { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 4px; font-size: 0.95rem; }
+  .rules b { font-variant-numeric: tabular-nums; display: inline-block; min-width: 2.2em; }
 
   /* Tally */
   .tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
@@ -119,10 +128,10 @@
 
   <section class="nowcard" aria-labelledby="nowTitle">
     <div class="top">
-      <h2 id="nowTitle">Wind and light now</h2>
+      <h2 id="nowTitle">Stalking conditions</h2>
       <span class="sub" id="nowAge"></span>
     </div>
-    <div id="nowBody" class="sub">Tap <b>Use my location</b> to see the wind where you are.</div>
+    <div id="nowBody" class="sub">Tap <b>Use my location</b> to see the best times and the wind where you are.</div>
     <div class="actions">
       <button class="ghost" type="button" id="nowGps">Use my location</button>
       <button class="ghost" type="button" id="nowRefresh" hidden>Refresh</button>
@@ -316,11 +325,17 @@
     if (!k) return `<div class="pending">${canWrite ? "Working out conditions…" : "Conditions not worked out yet."}</div>`;
     const f = (v, d = 0) => num(v) !== null ? v.toFixed(d) : "–";
     const pch = num(k.pressure_change_24h) !== null ? `, ${k.pressure_change_24h >= 0 ? "+" : ""}${f(k.pressure_change_24h)} in 24h` : "";
+    const vis = num(k.visibility_m) !== null ? `<dt>Visibility</dt><dd>${(k.visibility_m / 1000).toFixed(1)} km</dd>` : "";
+    const snow = num(k.snow_24h_cm) ? `, snow ${f(k.snow_24h_cm, 1)} cm` : "";
+    const rated = k.rating ? `<dt>Rating</dt><dd><span class="rating ${esc(k.rating)}">${esc(k.rating)}</span> ${esc((k.rating_reasons || []).join(", ") || "Nothing stands out")}</dd>` : "";
     return `<dl>
+      ${rated}
       <dt>Wind</dt><dd>From the ${esc(k.wind_from) || "–"}, ${f(k.wind_kmh)} km/h, gusts ${f(k.gust_kmh)}</dd>
-      <dt>Air</dt><dd>${f(k.air_temp_c)} °C, cloud ${f(k.cloud_pct)}%</dd>
-      <dt>Rain</dt><dd>${f(k.rain_24h_mm, 1)} mm in 24h</dd>
+      <dt>Air</dt><dd>${f(k.air_temp_c)} °C${num(k.feels_c) !== null ? `, feels ${f(k.feels_c)} °C` : ""}, cloud ${f(k.cloud_pct)}%</dd>
+      ${num(k.humidity_pct) !== null ? `<dt>Humidity</dt><dd>${f(k.humidity_pct)}%</dd>` : ""}
+      <dt>Rain</dt><dd>${f(k.rain_24h_mm, 1)} mm in 24h${snow}</dd>
       <dt>Pressure</dt><dd>${f(k.pressure_hpa)} hPa${pch}</dd>
+      ${vis}
       <dt>Light</dt><dd>${esc(k.light)}</dd>
       <dt>Moon</dt><dd>${f(k.moon_pct)}%, ${esc(k.moon_phase)}</dd>
     </dl>${k.data_note ? `<div class="sub">${esc(k.data_note)}</div>` : ""}`;
@@ -339,7 +354,7 @@
       const map = typeof c.lat === "number" ? `<a href="https://www.google.com/maps?q=${c.lat},${c.lon}" target="_blank" rel="noopener">Open in Maps</a>` : "";
       const edit = canWrite ? `<button class="ghost" type="button" data-edit="${esc(c.id)}">Edit</button>` : "";
       const k = c.conditions;
-      const brief = k && k.wind_from ? ` · wind from the ${esc(k.wind_from)}` : "";
+      const brief = (k && k.wind_from ? ` · wind from the ${esc(k.wind_from)}` : "") + (k && k.rating ? ` · ${esc(k.rating.toLowerCase())} conditions` : "");
       return `<article class="deer">
         <div class="top"><div>
           <div class="what">${esc(title)}</div>
@@ -379,8 +394,22 @@
     const stale = mins > 60 ? `<div class="stale">This is over an hour old. Tap Refresh.</div>` : "";
     const next = (k.wind_next || []).map(h => `<span>${esc(h.at)} ${esc(h.from)} ${h.kmh}</span>`).join("");
     const legal = k.sunrise && k.sunset ? `${addMins(k.sunrise, -60)} to ${addMins(k.sunset, 60)}` : "–";
+    const sign = v => (v >= 0 ? "+" : "") + v;
+    const card = o => `<div class="outing">
+        <div class="head"><b>${esc(o.day)} ${esc(o.part)}</b> <span class="rating ${esc(o.rating)}">${esc(o.rating)}</span></div>
+        <div class="sub">${esc(o.from)} to ${esc(o.to)} · ${esc(o.summary)}</div>
+        <div>${esc(o.reasons.join(", ") || "Nothing stands out")}</div>
+      </div>`;
+    // The next two outings in full, the rest folded away.
+    const all = k.outings || [];
+    const later = all.slice(2).map(card).join("");
+    const outings = all.slice(0, 2).map(card).join("") +
+      (later ? `<details><summary>Next few days</summary><div class="outings">${later}</div></details>` : "");
+    const rules = Conditions.RULES.map(r => `<li><b>${r.points > 0 ? "+" : ""}${r.points}</b> ${esc(r.tag)}: ${esc(r.when)}</li>`).join("");
+    const vis = num(k.visibility_m) !== null ? `${(k.visibility_m / 1000).toFixed(1)} km, ${esc(k.visibility)}` : "–";
     $("nowBody").className = "";
     $("nowBody").innerHTML = `${stale}
+      ${outings ? `<div class="outings">${outings}</div>` : ""}
       <div class="wind">${arrow(k.wind_from)}
         <div><div class="big">From the ${esc(k.wind_from)}</div>
         <div>${Math.round(k.wind_kmh)} km/h, gusts ${Math.round(k.gust_kmh)}</div></div>
@@ -390,9 +419,21 @@
         <div><b>Light</b> ${esc(k.light)}. Sunrise ${esc(k.sunrise)}, sunset ${esc(k.sunset)}</div>
         <div><b>Shooting hours</b> ${esc(legal)}</div>
         ${k.sunrise_tomorrow ? `<div><b>Sunrise tomorrow</b> ${esc(k.sunrise_tomorrow)}</div>` : ""}
-        <div><b>Air</b> ${Math.round(k.air_temp_c)} °C, cloud ${Math.round(k.cloud_pct)}%${k.raining ? ", raining" : ""}</div>
+        <div><b>Air</b> ${Math.round(k.air_temp_c)} °C, feels ${Math.round(k.feels_c)} °C, humidity ${Math.round(k.humidity_pct)}%</div>
+        <div><b>Cloud</b> ${Math.round(k.cloud_pct)}%${k.raining ? ", raining now" : ""}</div>
+        <div><b>Rain</b> ${k.rain_24h_mm} mm in the last 24h, ${k.rain_next6_mm} mm due in the next 6h</div>
+        <div><b>Pressure</b> ${k.pressure_hpa} hPa${num(k.pressure_change_24h) !== null ? `, ${sign(k.pressure_change_24h)} in 24h` : ""}</div>
+        <div><b>Visibility</b> ${vis}</div>
         <div><b>Moon</b> ${k.moon_pct}%, ${esc(k.moon_phase)}</div>
       </div>
+      <details><summary>How the rating works</summary>
+        <div class="nowlines">
+          <div>Each outing is scored on its weather. Dawn is 1 hour before sunrise to 2 hours after. Dusk is 2 hours before sunset to 1 hour after.</div>
+          <ul class="rules">${rules}</ul>
+          <div><b>Good</b> is 2 or more. <b>Fair</b> is -1 to 1. <b>Poor</b> is -2 or less.</div>
+          <div class="sub">Rules of thumb, not a guarantee.</div>
+        </div>
+      </details>
       <div class="sub">${esc(nowAt.label)}</div>`;
   }
 
@@ -617,7 +658,7 @@
   function needsConditions(d) {
     if (new Date(`${d.date}T${d.time}`) > new Date()) return false;       // not happened yet
     const k = d.conditions;
-    if (!k) return true;
+    if (!k || !("rating" in k)) return true;                              // none yet, or from before the rating
     // Recent figures get revised: redo them once a day until they settle.
     return !!k.data_note && k.added !== nowParts().date;
   }
