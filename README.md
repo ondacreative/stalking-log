@@ -9,8 +9,9 @@ A deer log for your phone: **https://ondacreative.github.io/stalking-log/**
 
 ## Saving from your phone
 
-Mark sends a set-up link. Tap it once and this phone can save.
-New phone, or cleared the browser? Ask Mark for the link again.
+1. Open the page and add it to your home screen.
+2. Paste the GitHub key Mark gives you into **Saving from this phone** at the bottom.
+3. Tap **Save key**. The **+ Add a deer** button appears.
 
 ## Worth knowing
 
