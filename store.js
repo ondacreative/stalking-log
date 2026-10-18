@@ -18,7 +18,9 @@ const GitHubStore = (() => {
     const repo = location.pathname.split("/").filter(Boolean)[0];
     return host && repo ? { owner: host[1], repo, branch: "main" } : null;   // null: opened locally
   })();
-  const FILES = { culls: "data/culls.json" };
+  const FILES = { culls: "data/culls.json", sightings: "data/sightings.json", sessions: "data/sessions.json" };
+  // Commit messages: "Deer: Roe buck 2026-10-18", "Sighting: Roe 2026-10-18", "Session: 2026-10-18 06:30"
+  const LABEL = { culls: "Deer", sightings: "Sighting", sessions: "Session" };
   const TOKEN_KEY = "ds_github_token";
   const API = REPO ? `https://api.github.com/repos/${REPO.owner}/${REPO.repo}` : "";
 
@@ -141,13 +143,13 @@ const GitHubStore = (() => {
               const doc = { id, ...body };
               if (i >= 0) list[i] = doc; else list.push(doc);
               return list;
-            }, `Deer: ${body.species || ""} ${body.sex || ""} ${body.date || ""}`.replace(/\s+/g, " ").trim()),
-            delete: () => mutate(name, list => list.filter(d => d.id !== id), "Delete deer"),
+            }, `${LABEL[name]}: ${name === "sessions" ? "" : body.species || ""} ${name === "culls" ? body.sex || "" : ""} ${body.date || ""} ${name === "sessions" ? body.time || "" : ""}`.replace(/\s+/g, " ").trim()),
+            delete: () => mutate(name, list => list.filter(d => d.id !== id), `Delete ${LABEL[name].toLowerCase()}`),
           };
         },
         // Several field updates in one save: {id: patch}
         updateMany: patches => mutate(name, list => list.map(d => patches[d.id] ? { ...d, ...patches[d.id] } : d),
-          `Conditions for ${Object.keys(patches).length} deer`),
+          `Conditions for ${Object.keys(patches).length} ${name === "culls" ? "deer" : name}`),
       };
     },
   };

@@ -121,6 +121,16 @@
   .setup.done { background: transparent; border: 0; padding: 0; }
   .setup.done > summary { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
   .setup ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+
+  /* Sessions, deer and sightings */
+  .starts { display: grid; gap: 10px; }
+  .deer.blank { border: 2px dashed var(--line); }
+  .sess { font-size: 1.25rem; font-weight: 700; }
+  .evrow { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+  .seen { font-size: 1.1rem; }
+  .tag { color: var(--muted); font-size: 0.85rem; font-weight: 700; }
+  .startk { background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; }
+  #byWho { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -148,65 +158,76 @@
 
   <div id="status" class="status" hidden></div>
 
-  <button class="primary" id="openForm" type="button" hidden>+ Add a deer</button>
+  <div class="starts" id="starts" hidden>
+    <button class="primary" id="openDeer" type="button">+ Add a deer</button>
+    <button class="ghost wide" id="openSight" type="button">+ Sighting</button>
+    <button class="ghost wide" id="openSess" type="button">+ Log a session</button>
+  </div>
 
-  <form id="form" hidden novalidate>
-    <h2 id="formTitle">Add a deer</h2>
+  <!-- Deer -->
+  <form id="deerForm" hidden novalidate>
+    <h2 id="deerTitle">Add a deer</h2>
+
+    <fieldset>
+      <legend>Shot by</legend>
+      <div class="chips" id="dWhoChips"></div>
+      <input type="text" id="dWhoOther" placeholder="Name" aria-label="Someone else's name" hidden>
+    </fieldset>
 
     <fieldset>
       <legend>Species</legend>
-      <div class="chips" id="speciesChips"></div>
-      <input type="text" id="speciesOther" placeholder="Other species" aria-label="Other species" hidden>
+      <div class="chips" id="dSpeciesChips"></div>
+      <input type="text" id="dSpeciesOther" placeholder="Other species" aria-label="Other species" hidden>
     </fieldset>
 
     <fieldset>
       <legend>Sex</legend>
-      <div class="chips" id="sexChips"></div>
+      <div class="chips" id="dSexChips"></div>
     </fieldset>
 
     <fieldset>
       <legend>Age</legend>
-      <div class="chips" id="ageChips"></div>
+      <div class="chips" id="dAgeChips"></div>
     </fieldset>
 
     <fieldset>
-      <label class="lab" for="kg">Larder weight in kg (optional)</label>
-      <input type="number" id="kg" inputmode="decimal" min="0" max="300" step="0.1">
+      <label class="lab" for="dKg">Larder weight in kg (optional)</label>
+      <input type="number" id="dKg" inputmode="decimal" min="0" max="300" step="0.1">
     </fieldset>
 
     <fieldset>
       <legend>When</legend>
       <div class="row">
-        <input type="date" id="date" aria-label="Date">
-        <input type="time" id="time" aria-label="Time">
+        <input type="date" id="dDate" aria-label="Date">
+        <input type="time" id="dTime" aria-label="Time">
       </div>
     </fieldset>
 
     <fieldset>
       <legend>Where</legend>
-      <button class="ghost wide" type="button" id="gps">Use my location</button>
-      <div class="chips" id="spotChips"></div>
-      <label class="lab" for="coords">Or paste coordinates</label>
-      <input type="text" id="coords" placeholder="56.123456, -3.987654" autocomplete="off">
-      <div id="coordsMsg" aria-live="polite"></div>
-      <label class="lab" for="ground">Ground (optional)</label>
-      <input type="text" id="ground" placeholder="e.g. Home farm, top wood">
+      <div class="chips" id="dSpotChips"></div>
+      <button class="ghost wide" type="button" id="dGps">Use my location</button>
+      <label class="lab" for="dCoords">Or paste coordinates</label>
+      <input type="text" id="dCoords" placeholder="53.105000, -2.023000" autocomplete="off">
+      <div id="dCoordsMsg" aria-live="polite"></div>
+      <label class="lab" for="dGround">Ground (optional)</label>
+      <input type="text" id="dGround" placeholder="e.g. Top wood">
     </fieldset>
 
     <fieldset>
       <legend>Shot (optional)</legend>
-      <label class="lab" for="distance">Distance in metres</label>
-      <input type="number" id="distance" inputmode="numeric" min="0" max="1000">
+      <label class="lab" for="dDistance">Distance in metres</label>
+      <input type="number" id="dDistance" inputmode="numeric" min="0" max="1000">
       <div class="lab">Placement</div>
-      <div class="chips" id="placeChips"></div>
-      <label class="lab" for="rifle">Rifle or calibre</label>
-      <div class="chips" id="rifleChips"></div>
-      <input type="text" id="rifle" placeholder="e.g. .243">
+      <div class="chips" id="dShotChips"></div>
+      <label class="lab" for="dRifle">Rifle or calibre</label>
+      <div class="chips" id="dRifleChips"></div>
+      <input type="text" id="dRifle" placeholder="e.g. .243">
     </fieldset>
 
     <fieldset>
-      <label class="lab" for="notes">Notes (optional)</label>
-      <textarea id="notes" placeholder="e.g. Came out of the rides at first light."></textarea>
+      <label class="lab" for="dNotes">Notes (optional)</label>
+      <textarea id="dNotes" placeholder="e.g. Came out of the rides at first light."></textarea>
     </fieldset>
 
     <fieldset id="photoSet" hidden>
@@ -215,18 +236,145 @@
       <img id="photoPreview" class="preview" alt="Photo preview" hidden>
     </fieldset>
 
-    <div id="formErr" class="status" aria-live="polite"></div>
-
+    <div id="dErr" class="status" aria-live="polite"></div>
     <div class="actions">
-      <button class="primary" type="submit" id="save">Save deer</button>
-      <button class="ghost" type="button" id="cancel">Cancel</button>
-      <button class="danger" type="button" id="del" hidden>Delete</button>
+      <button class="primary" type="submit" id="dSave">Save deer</button>
+      <button class="ghost" type="button" data-cancel>Cancel</button>
+      <button class="danger" type="button" data-del hidden>Delete</button>
     </div>
-    <div class="confirm" id="confirmDel" hidden>
+    <div class="confirm" data-confirm hidden>
       <div>Delete this deer for good?</div>
       <div class="actions">
-        <button class="danger" type="button" id="delYes">Yes, delete</button>
-        <button class="ghost" type="button" id="delNo">Keep it</button>
+        <button class="danger" type="button" data-del-yes>Yes, delete</button>
+        <button class="ghost" type="button" data-del-no>Keep it</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Sighting -->
+  <form id="sightForm" hidden novalidate>
+    <h2 id="sightTitle">Add a sighting</h2>
+    <div class="hint">Deer seen but not shot.</div>
+
+    <fieldset>
+      <legend>Species</legend>
+      <div class="chips" id="sSpeciesChips"></div>
+      <input type="text" id="sSpeciesOther" placeholder="Other species" aria-label="Other species" hidden>
+    </fieldset>
+
+    <fieldset>
+      <legend>How many</legend>
+      <div class="chips" id="sCountChips"></div>
+      <input type="number" id="sCount" inputmode="numeric" min="1" max="500" aria-label="How many">
+    </fieldset>
+
+    <fieldset>
+      <legend>Sex (optional)</legend>
+      <div class="chips" id="sSexChips"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Seen by</legend>
+      <div class="hint">Pick all who saw them.</div>
+      <div class="chips" id="sWhoChips"></div>
+      <input type="text" id="sWhoOther" placeholder="Name" aria-label="Someone else's name" hidden>
+    </fieldset>
+
+    <fieldset>
+      <legend>When</legend>
+      <div class="row">
+        <input type="date" id="sDate" aria-label="Date">
+        <input type="time" id="sTime" aria-label="Time">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Where</legend>
+      <div class="chips" id="sSpotChips"></div>
+      <button class="ghost wide" type="button" id="sGps">Use my location</button>
+      <label class="lab" for="sCoords">Or paste coordinates</label>
+      <input type="text" id="sCoords" placeholder="53.105000, -2.023000" autocomplete="off">
+      <div id="sCoordsMsg" aria-live="polite"></div>
+      <label class="lab" for="sGround">Ground (optional)</label>
+      <input type="text" id="sGround" placeholder="e.g. Top wood">
+    </fieldset>
+
+    <fieldset>
+      <label class="lab" for="sNotes">Notes (optional)</label>
+      <textarea id="sNotes" placeholder="e.g. Group of does feeding on the field edge."></textarea>
+    </fieldset>
+
+    <div id="sErr" class="status" aria-live="polite"></div>
+    <div class="actions">
+      <button class="primary" type="submit" id="sSave">Save sighting</button>
+      <button class="ghost" type="button" data-cancel>Cancel</button>
+      <button class="danger" type="button" data-del hidden>Delete</button>
+    </div>
+    <div class="confirm" data-confirm hidden>
+      <div>Delete this sighting for good?</div>
+      <div class="actions">
+        <button class="danger" type="button" data-del-yes>Yes, delete</button>
+        <button class="ghost" type="button" data-del-no>Keep it</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Session -->
+  <form id="sessForm" hidden novalidate>
+    <h2 id="sessTitle">Log a session</h2>
+    <div class="hint">Deer and sightings in this time are grouped under it.
+      Nothing seen? It shows as a blank. Still worth logging.</div>
+
+    <fieldset>
+      <legend>Start</legend>
+      <div class="row">
+        <input type="date" id="eDate" aria-label="Date">
+        <input type="time" id="eTime" aria-label="Start time">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>How long</legend>
+      <div class="chips" id="eHourChips"></div>
+      <div class="row">
+        <div><label class="lab" for="eHours">Hours</label><input type="number" id="eHours" inputmode="decimal" min="0.5" max="24" step="0.5"></div>
+        <div class="hint" id="eEnd" aria-live="polite"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Who went</legend>
+      <div class="chips" id="eWhoChips"></div>
+      <input type="text" id="eWhoOther" placeholder="Name" aria-label="Someone else's name" hidden>
+    </fieldset>
+
+    <fieldset>
+      <legend>Where</legend>
+      <div class="chips" id="eSpotChips"></div>
+      <button class="ghost wide" type="button" id="eGps">Use my location</button>
+      <label class="lab" for="eCoords">Or paste coordinates</label>
+      <input type="text" id="eCoords" placeholder="53.105000, -2.023000" autocomplete="off">
+      <div id="eCoordsMsg" aria-live="polite"></div>
+      <label class="lab" for="eGround">Ground (optional)</label>
+      <input type="text" id="eGround" placeholder="e.g. Top wood">
+    </fieldset>
+
+    <fieldset>
+      <label class="lab" for="eNotes">Notes (optional)</label>
+      <textarea id="eNotes" placeholder="e.g. High seat by the top wood. Wind swung round at 7."></textarea>
+    </fieldset>
+
+    <div id="eErr" class="status" aria-live="polite"></div>
+    <div class="actions">
+      <button class="primary" type="submit" id="eSave">Save session</button>
+      <button class="ghost" type="button" data-cancel>Cancel</button>
+      <button class="danger" type="button" data-del hidden>Delete</button>
+    </div>
+    <div class="confirm" data-confirm hidden>
+      <div>Delete this session? The deer and sightings are kept.</div>
+      <div class="actions">
+        <button class="danger" type="button" data-del-yes>Yes, delete</button>
+        <button class="ghost" type="button" data-del-no>Keep it</button>
       </div>
     </div>
   </form>
@@ -234,11 +382,12 @@
   <section>
     <h2>Tally</h2>
     <div class="tally" id="tally"><div class="empty">Your count of each species will show here.</div></div>
+    <div class="sub" id="byWho"></div>
   </section>
 
   <section>
-    <h2>Deer</h2>
-    <div class="list" id="list"><div class="empty">No deer yet. Tap <b>Add a deer</b> after your next one.</div></div>
+    <h2>Sessions</h2>
+    <div class="list" id="list"><div class="empty">Nothing logged yet.</div></div>
   </section>
 
   <details class="setup" id="setup">
@@ -271,12 +420,22 @@
 <script src="store.js"></script>
 <script>
 (() => {
+  const PEOPLE = ["Tim", "Rich"];
   const SPECIES = ["Roe", "Red", "Fallow", "Muntjac", "Sika", "Chinese water deer"];
   // Stag and hind for the big deer, buck and doe for the rest.
   const SEXES = { Red: ["Stag", "Hind"], Sika: ["Stag", "Hind"] };
   const sexesFor = sp => SEXES[sp] || (SPECIES.includes(sp) ? ["Buck", "Doe"] : ["Male", "Female"]);
   const AGES = ["Young", "Yearling", "Adult"];
-  const PLACES = ["Heart and lungs", "Neck", "Head", "Other"];
+  const SHOTS = ["Heart and lungs", "Neck", "Head", "Other"];
+  const COUNTS = [1, 2, 3, 4, 6, 10];
+  const HOURS = [2, 3, 4, 6];
+  // Named places in the Staffordshire Moorlands: quick picks on every form and in the conditions card.
+  const PLACES = [
+    { name: "Rushton", lat: 53.1587, lon: -2.1077 },
+    { name: "Longnor", lat: 53.1810, lon: -1.8700 },
+    { name: "Warslow", lat: 53.1240, lon: -1.8740 },
+    { name: "Leek", lat: 53.1050, lon: -2.0230 },
+  ];
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const store = {
@@ -284,10 +443,9 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
 
-  let db = GitHubStore.db, assets = null, canWrite = false;
-  let culls = [];                 // [{id, ...data}]
-  let editing = null;             // id being edited, or null
-  let species = "", sex = "", age = "", place = "", photoBlob = null;
+  const db = GitHubStore.db;
+  let assets = null, canWrite = false;
+  let culls = [], sightings = [], sessionsList = [];   // each [{id, ...data}]
 
   // ---------- helpers
   const pad = n => String(n).padStart(2, "0");
@@ -312,6 +470,20 @@
     const [h, m] = hhmm.split(":").map(Number), t = (h * 60 + m + mins + 1440) % 1440;
     return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
   };
+  function endTime(time, hours) {
+    const h = Number(hours);
+    if (!time || !(h > 0)) return "";
+    const [hh, mm] = time.split(":").map(Number);
+    const total = hh * 60 + mm + Math.round(h * 60);
+    const t = `${pad(Math.floor(total / 60) % 24)}:${pad(total % 60)}`;
+    return total >= 24 * 60 ? `${t} next day` : t;
+  }
+  const hoursText = h => `${Number(h)} ${Number(h) === 1 ? "hour" : "hours"}`;
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const whoText = list => (list || []).join(" and ");
+  const isSighting = x => x._kind === "sighting";
+  const listFrom = key => { try { const v = JSON.parse(store.get(key) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } };
 
   // Ask the phone where it is. Resolves {lat, lon, accuracy} or rejects with a plain message.
   function locate() {
@@ -325,27 +497,60 @@
     });
   }
 
+  // ---------- sessions: a logged session holds the deer and sightings in its time window.
+  // Anything outside a logged session is grouped by time: gaps under 4 hours chain together.
+  const SLACK = 30 * 60e3, GAP = 4 * 3600e3;
+  const ms = (date, time) => new Date(`${date}T${time || "00:00"}`).getTime();
+  function sessions() {
+    const logged = sessionsList.map(t => ({ trip: t, start: ms(t.date, t.time), end: ms(t.date, t.time) + Number(t.hours || 0) * 3600e3, events: [] }));
+    const loose = [];
+    const events = [...culls.map(c => ({ ...c, _kind: "deer" })), ...sightings.map(s => ({ ...s, _kind: "sighting" }))]
+      .sort((a, b) => ms(a.date, a.time) - ms(b.date, b.time));
+    for (const c of events) {
+      const m = ms(c.date, c.time);
+      const home = logged.find(x => m >= x.start && m <= x.end) || logged.find(x => m >= x.start - SLACK && m <= x.end + SLACK);
+      if (home) home.events.push(c); else loose.push(c);
+    }
+    const auto = [];
+    for (const c of loose) {
+      const m = ms(c.date, c.time), last = auto[auto.length - 1];
+      if (last && m - last.end <= GAP) { last.events.push(c); last.end = m; }
+      else auto.push({ trip: null, start: m, end: m, events: [c] });
+    }
+    const all = [...logged, ...auto];
+    for (const x of all) { x.deer = x.events.filter(c => !isSighting(c)); x.seen = x.events.filter(isSighting); }
+    return all.sort((a, b) => b.start - a.start);
+  }
+  const sessionOf = id => sessions().find(x => (x.trip && x.trip.id === id) || x.events.some(c => c.id === id));
+
   // ---------- render
   function render() {
-    const n = culls.length;
-    $("count").textContent = n ? `${n} deer logged` : "No deer logged yet";
+    const all = sessions(), blanks = all.filter(x => !x.events.length).length;
+    const parts = [culls.length ? plural(culls.length, "deer", "deer") : "No deer yet"];
+    if (sightings.length) parts.push(plural(sightings.length, "sighting", "sightings"));
+    if (all.length) parts.push(plural(all.length, "session", "sessions"));
+    if (blanks) parts.push(`${blanks} blank`);
+    $("count").textContent = parts.join(", ");
     renderTally();
     renderList();
   }
 
   function renderTally() {
-    const t = {};
+    const t = {}, who = {};
     for (const c of culls) {
       const k = c.species || "Unknown";
       t[k] = t[k] || { n: 0, sexes: {} };
       t[k].n++;
       if (c.sex) t[k].sexes[c.sex] = (t[k].sexes[c.sex] || 0) + 1;
+      if (c.shooter) who[c.shooter] = (who[c.shooter] || 0) + 1;
     }
     const keys = Object.keys(t).sort((a, b) => t[b].n - t[a].n || a.localeCompare(b));
     $("tally").innerHTML = keys.length ? keys.map(k => {
       const split = Object.entries(t[k].sexes).map(([s, n]) => `${n} ${s.toLowerCase()}${n === 1 ? "" : "s"}`).join(", ");
       return `<div class="tcard"><div class="sp">${esc(k)}</div><div class="n">${t[k].n}</div><div class="sub">${esc(split)}</div></div>`;
     }).join("") : `<div class="empty">Your count of each species will show here.</div>`;
+    const w = Object.entries(who).sort((a, b) => b[1] - a[1]);
+    $("byWho").innerHTML = w.length ? `<b>Shot by:</b> ${w.map(([p, n]) => `${esc(p)} ${n}`).join(" · ")}` : "";
   }
 
   function conditionsHtml(k) {
@@ -367,46 +572,97 @@
       <dt>Moon</dt><dd>${f(k.moon_pct)}%, ${esc(k.moon_phase)}</dd>
     </dl>${k.data_note ? `<div class="sub">${esc(k.data_note)}</div>` : ""}`;
   }
+  function conditionsLine(k) {
+    if (!k) return canWrite ? "Working out conditions…" : "Conditions not worked out yet.";
+    const bits = [];
+    if (k.rating) bits.push(`<span class="rating ${esc(k.rating)}">${esc(k.rating)}</span>`);
+    if (k.wind_from) bits.push(`wind from the ${esc(k.wind_from)} ${Math.round(k.wind_kmh)} km/h`);
+    if (num(k.air_temp_c) !== null) bits.push(`${Math.round(k.air_temp_c)} °C`);
+    if (k.light) bits.push(esc(k.light));
+    return `<b>At the start:</b> ${bits.join(" · ") || "no data"}`;
+  }
+  const mapLink = c => typeof c.lat === "number" ? `<div class="links"><a href="https://www.google.com/maps?q=${c.lat},${c.lon}" target="_blank" rel="noopener">Open in Maps</a></div>` : "";
 
-  function renderList() {
-    if (!culls.length) {
-      $("list").innerHTML = `<div class="empty">No deer yet. Tap <b>Add a deer</b> after your next one.</div>`;
-      return;
-    }
-    $("list").innerHTML = [...culls].sort(byNewest).map(c => {
-      const title = [c.species, c.sex ? c.sex.toLowerCase() : ""].filter(Boolean).join(" ");
-      const facts = [c.age, num(c.kg) !== null ? `${c.kg} kg larder` : ""].filter(Boolean).map(esc).join(" · ");
-      const shot = [num(c.distance) !== null ? `${c.distance} m` : "", c.place, c.rifle].filter(Boolean).map(esc).join(" · ");
-      const photo = c.photo ? `<img class="photo" src="${esc(GitHubStore.photoUrl(c.photo))}" alt="${esc(title)}" loading="lazy" onerror="this.hidden=true">` : "";
-      const map = typeof c.lat === "number" ? `<a href="https://www.google.com/maps?q=${c.lat},${c.lon}" target="_blank" rel="noopener">Open in Maps</a>` : "";
-      const edit = canWrite ? `<button class="ghost" type="button" data-edit="${esc(c.id)}">Edit</button>` : "";
-      const k = c.conditions;
-      const brief = (k && k.wind_from ? ` · wind from the ${esc(k.wind_from)}` : "") + (k && k.rating ? ` · ${esc(k.rating.toLowerCase())} conditions` : "");
-      return `<article class="deer">
-        <div class="top"><div>
-          <div class="what">${esc(title)}</div>
-          ${facts ? `<div>${facts}</div>` : ""}
-          <div class="when">${esc(dayLabel(c.date))}, ${esc(c.time)}${c.ground ? ` · ${esc(c.ground)}` : ""}${brief}</div>
-          ${shot ? `<div class="when">${shot}</div>` : ""}
-        </div>${edit}</div>
-        ${photo}
-        ${c.notes ? `<div>${esc(c.notes)}</div>` : ""}
-        <details><summary>Conditions at ${esc(c.time)}</summary>${conditionsHtml(k)}</details>
-        <div class="links">${map}</div>
-      </article>`;
-    }).join("");
+  function deerRow(c) {
+    const title = [c.species, c.sex ? c.sex.toLowerCase() : ""].filter(Boolean).join(" ");
+    const facts = [c.shooter ? `Shot by ${c.shooter}` : "", c.age, num(c.kg) !== null ? `${c.kg} kg larder` : ""].filter(Boolean).map(esc).join(" · ");
+    const shot = [num(c.distance) !== null ? `${c.distance} m` : "", c.place, c.rifle].filter(Boolean).map(esc).join(" · ");
+    const photo = c.photo ? `<img class="photo" src="${esc(GitHubStore.photoUrl(c.photo))}" alt="${esc(title)}" loading="lazy" onerror="this.hidden=true">` : "";
+    const edit = canWrite ? `<button class="ghost" type="button" data-edit-deer="${esc(c.id)}">Edit</button>` : "";
+    const k = c.conditions;
+    const brief = (k && k.wind_from ? ` · wind from the ${esc(k.wind_from)}` : "") + (k && k.rating ? ` · ${esc(k.rating.toLowerCase())} conditions` : "");
+    return `<div class="evrow">
+      <div class="top"><div>
+        <div class="what">${esc(title)}</div>
+        ${facts ? `<div>${facts}</div>` : ""}
+        <div class="when">${esc(c.time)}${c.ground ? ` · ${esc(c.ground)}` : ""}${brief}</div>
+        ${shot ? `<div class="when">${shot}</div>` : ""}
+      </div>${edit}</div>
+      ${photo}
+      ${c.notes ? `<div>${esc(c.notes)}</div>` : ""}
+      <details><summary>Conditions at ${esc(c.time)}</summary>${conditionsHtml(k)}</details>
+      ${mapLink(c)}
+    </div>`;
   }
 
-  // ---------- wind and light now
+  function sightRow(c) {
+    const what = [plural(c.count || 1, c.species || "deer", c.species || "deer"), c.sex ? c.sex.toLowerCase() : ""].filter(Boolean).join(", ");
+    const edit = canWrite ? `<button class="ghost" type="button" data-edit-sight="${esc(c.id)}">Edit</button>` : "";
+    return `<div class="evrow">
+      <div class="top"><div>
+        <div class="seen"><span class="tag">Seen</span> ${esc(what)}</div>
+        <div class="when">${esc(c.time)}${c.seenBy && c.seenBy.length ? ` · ${esc(whoText(c.seenBy))}` : ""}${c.ground ? ` · ${esc(c.ground)}` : ""}</div>
+      </div>${edit}</div>
+      ${c.notes ? `<div>${esc(c.notes)}</div>` : ""}
+      <details><summary>Conditions at ${esc(c.time)}</summary>${conditionsHtml(c.conditions)}</details>
+      ${mapLink(c)}
+    </div>`;
+  }
+
+  function sessionCard(x) {
+    const t = x.trip, ev = x.events, first = t || ev[0];
+    const when = t
+      ? `${esc(t.time)}${endTime(t.time, t.hours) ? ` to ${esc(endTime(t.time, t.hours))}` : ""}${t.hours ? `, ${esc(hoursText(t.hours))}` : ""}`
+      : ev.length > 1 ? `${esc(ev[0].time)} to ${esc(ev[ev.length - 1].time)}` : esc(ev[0].time);
+    const seenN = x.seen.reduce((n, s) => n + (Number(s.count) || 1), 0);
+    const what = [x.deer.length ? plural(x.deer.length, "deer", "deer") : "", seenN ? `${seenN} seen` : ""].filter(Boolean).join(", ") || "Blank";
+    const extra = t ? [whoText(t.who), t.ground].filter(Boolean).map(esc).join(" · ") : "";
+    const ref = t ? `data-edit-sess="${esc(t.id)}"` : `data-detail="${esc(ev[0].id)}"`;
+    const edit = canWrite ? `<button class="ghost" type="button" ${ref}>${t ? "Edit" : "Add details"}</button>` : "";
+    const k = t ? t.conditions : ev[0].conditions;
+    const startTime = t ? t.time : ev[0].time;
+    const cond = `<div class="startk">${conditionsLine(k)}</div>
+      ${k ? `<details><summary>All conditions at ${esc(startTime)}</summary>${conditionsHtml(k)}</details>` : ""}`;
+    const sid = esc(t ? t.id : ev[0].id);
+    const add = canWrite ? `<div class="actions"><button class="ghost" type="button" data-add-deer="${sid}">+ Deer</button>
+      <button class="ghost" type="button" data-add-sight="${sid}">+ Sighting</button></div>` : "";
+    return `<article class="deer${ev.length ? "" : " blank"}">
+      <div class="top"><div>
+        <div class="sess">${esc(dayLabel(first.date))}</div>
+        <div class="when"><b>${esc(what)}</b> · ${when}</div>
+        ${extra ? `<div class="when">${extra}</div>` : ""}
+        ${t ? "" : `<div class="tag">Grouped by time. Tap Add details to log hours and who went.</div>`}
+      </div>${edit}</div>
+      ${t && t.notes ? `<div>${esc(t.notes)}</div>` : ""}
+      ${cond}${t && !ev.length ? mapLink(t) : ""}
+      ${ev.map(c => isSighting(c) ? sightRow(c) : deerRow(c)).join("")}
+      ${add}
+    </article>`;
+  }
+
+  function renderList() {
+    const all = sessions();
+    $("list").innerHTML = all.length ? all.map(sessionCard).join("")
+      : `<div class="empty">Nothing logged yet. Tap <b>Log a session</b> when you go out, and <b>Add a deer</b> after each one.</div>`;
+  }
+
+  // ---------- conditions now, for a named place or the phone's location
   let nowDoc = null, nowAt = null, nowBusy = false;
   try { nowAt = JSON.parse(store.get("ds_now_at") || "null"); } catch {}
-  // Set places, for when the phone's location is off or blocked.
-  const NOW_PLACES = [
-    { name: "Leek", lat: 53.105, lon: -2.026 },
-    { name: "Rocester", lat: 52.951, lon: -1.835 },
-  ];
+  // Places that are no longer on the list fall back to the first one.
+  if (nowAt && nowAt.name && !PLACES.some(p => p.name === nowAt.name)) nowAt = null;
   function drawNowPlaces() {
-    $("nowPlaces").replaceChildren(...NOW_PLACES.map(pl => chip(pl.name, !!nowAt && nowAt.name === pl.name, () => {
+    $("nowPlaces").replaceChildren(...PLACES.map(pl => chip(pl.name, !!nowAt && nowAt.name === pl.name, () => {
       nowAt = { name: pl.name, lat: pl.lat, lon: pl.lon, label: `For ${pl.name}.` };
       store.set("ds_now_at", JSON.stringify(nowAt));
       drawNowPlaces();
@@ -504,13 +760,13 @@
       drawNowPlaces();
       await refreshNow();
     } catch (e) {
-      $("nowBody").className = "status"; $("nowBody").textContent = e.message;
+      $("nowBody").className = "status"; $("nowBody").textContent = `${e.message} Or tap a place above.`;
     } finally {
       b.disabled = false; b.textContent = "Use my location";
     }
   }
 
-  // ---------- form
+  // ---------- form pieces shared by all three forms
   function chip(label, pressed, onClick) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.textContent = label;
@@ -519,110 +775,128 @@
     return b;
   }
   function drawChips(box, options, current, pick) {
-    $(box).replaceChildren(...options.map(o => chip(o, current === o, () => pick(current === o ? "" : o))));
+    $(box).replaceChildren(...options.map(o => chip(String(o), current === o, () => pick(current === o ? "" : o))));
   }
 
-  function currentSpecies() {
-    return species === "_other" ? $("speciesOther").value.trim() : species;
+  // Species chips with "Other": state lives in the object passed in.
+  function speciesPicker(st, boxId, otherId, redraw) {
+    const box = $(boxId); box.replaceChildren();
+    for (const s of SPECIES) box.append(chip(s, st.species === s, () => { st.species = s; $(otherId).hidden = true; redraw(); }));
+    box.append(chip("Other", st.species === "_other", () => { st.species = "_other"; $(otherId).hidden = false; $(otherId).focus(); redraw(); }));
   }
-  function drawSpecies() {
-    const box = $("speciesChips"); box.replaceChildren();
-    for (const s of SPECIES) box.append(chip(s, species === s, () => { species = s; $("speciesOther").hidden = true; drawForm(); }));
-    box.append(chip("Other", species === "_other", () => { species = "_other"; $("speciesOther").hidden = false; $("speciesOther").focus(); drawForm(); }));
-  }
-  function drawForm() {
-    drawSpecies();
-    const sexes = sexesFor(currentSpecies());
-    // Switching between stag/hind and buck/doe species: carry male/female across.
-    if (sex && !sexes.includes(sex)) {
-      const male = ["Stag", "Buck", "Male"].includes(sex);
-      sex = male ? sexes[0] : sexes[1];
-    }
-    drawChips("sexChips", sexes, sex, v => { sex = v; drawForm(); });
-    drawChips("ageChips", AGES, age, v => { age = v; drawForm(); });
-    drawChips("placeChips", PLACES, place, v => { place = v; drawForm(); });
-    drawRifles();
-  }
-  function drawRifles() {
-    const seen = [];
-    for (const c of [...culls].sort(byNewest)) if (c.rifle && !seen.includes(c.rifle)) seen.push(c.rifle);
-    $("rifleChips").replaceChildren(...seen.slice(0, 4).map(r => chip(r, $("rifle").value === r, () => { $("rifle").value = r; drawRifles(); })));
+  const speciesValue = (st, otherId) => st.species === "_other" ? cap($(otherId).value.trim()) : st.species;
+  function setSpecies(st, otherId, sp) {
+    st.species = !sp || SPECIES.includes(sp) ? sp : "_other";
+    $(otherId).value = st.species === "_other" ? sp : "";
+    $(otherId).hidden = st.species !== "_other";
   }
 
-  function spotsFromCulls() {
-    // distinct places, newest first, merged within ~50 m
+  // People chips: single (shooter) or several (who went, seen by), plus "Other" with a name box.
+  function peoplePicker(st, boxId, otherId, multi, redraw) {
+    const box = $(boxId); box.replaceChildren();
+    for (const p of PEOPLE) box.append(chip(p, st.who.includes(p), () => {
+      st.who = multi ? (st.who.includes(p) ? st.who.filter(x => x !== p) : [...st.who, p]) : [p];
+      if (!multi) { st.other = false; $(otherId).hidden = true; }
+      redraw();
+    }));
+    box.append(chip("Someone else", st.other, () => {
+      st.other = !st.other || !multi;
+      if (!multi) st.who = [];
+      $(otherId).hidden = !st.other;
+      if (st.other) $(otherId).focus();
+      redraw();
+    }));
+  }
+  const peopleValue = (st, otherId) => {
+    const extra = st.other ? $(otherId).value.trim() : "";
+    return [...st.who, ...(extra ? [cap(extra)] : [])];
+  };
+  function setPeople(st, otherId, list) {
+    list = list || [];
+    st.who = list.filter(p => PEOPLE.includes(p));
+    const extra = list.filter(p => !PEOPLE.includes(p));
+    st.other = extra.length > 0;
+    $(otherId).value = extra.join(", ");
+    $(otherId).hidden = !st.other;
+  }
+
+  // Where: named places, then spots used before, then GPS or pasted coordinates.
+  const spot = pre => ({ box: `${pre}SpotChips`, coords: `${pre}Coords`, msg: `${pre}CoordsMsg`, ground: `${pre}Ground`, gps: `${pre}Gps` });
+  const near = (a, b) => Math.abs(a.lat - b.lat) < 0.00045 && Math.abs(a.lon - b.lon) < 0.0007;   // ~50 m
+  function spotsUsed() {
     const out = [];
-    for (const c of [...culls].sort(byNewest)) {
-      if (typeof c.lat !== "number") continue;
-      const near = out.find(s => Math.abs(s.lat - c.lat) < 0.00045 && Math.abs(s.lon - c.lon) < 0.0007);
-      if (near) { if (!near.name && c.ground) near.name = c.ground; continue; }
+    for (const c of [...culls, ...sightings, ...sessionsList].sort(byNewest)) {
+      if (typeof c.lat !== "number" || PLACES.some(p => near(p, c))) continue;
+      const hit = out.find(s => near(s, c));
+      if (hit) { if (!hit.name && c.ground) hit.name = c.ground; continue; }
       out.push({ lat: c.lat, lon: c.lon, name: c.ground || "", date: c.date });
     }
-    return out.slice(0, 6);
+    return out.slice(0, 4);
   }
-  function drawSpots() {
-    const box = $("spotChips"); box.replaceChildren();
-    const cur = parseCoords($("coords").value);
-    spotsFromCulls().forEach(s => {
-      const picked = cur && cur.lat === s.lat && cur.lon === s.lon;
+  function drawSpots(f) {
+    const box = $(f.box); box.replaceChildren();
+    const cur = parseCoords($(f.coords).value);
+    const opts = [...PLACES.map(p => ({ ...p, named: true })), ...spotsUsed()];
+    for (const s of opts) {
+      const picked = !!cur && near(cur, s);
       box.append(chip(s.name || `Spot from ${dayLabel(s.date)}`, picked, () => {
-        $("coords").value = `${s.lat}, ${s.lon}`;
-        if (s.name && !$("ground").value) $("ground").value = s.name;
-        showCoords(); drawSpots();
+        $(f.coords).value = `${s.lat}, ${s.lon}`;
+        if (s.name && !$(f.ground).value) $(f.ground).value = s.name;
+        showCoords(f); drawSpots(f);
       }));
-    });
+    }
   }
-  function showCoords() {
-    const msg = $("coordsMsg"), v = $("coords").value.trim();
+  function showCoords(f) {
+    const msg = $(f.msg), v = $(f.coords).value.trim();
     if (!v) { msg.textContent = ""; msg.className = ""; return null; }
     const p = parseCoords(v);
     if (p) { msg.textContent = `Got it: ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`; msg.className = "spotok"; }
     else { msg.textContent = "Those don't look like coordinates. Copy the numbers, not a share link."; msg.className = "spoterr"; }
     return p;
   }
-  async function formHere() {
-    const b = $("gps"), msg = $("coordsMsg");
+  async function formHere(f) {
+    const b = $(f.gps), msg = $(f.msg);
     b.disabled = true; b.textContent = "Finding you…";
     try {
       const p = await locate();
-      $("coords").value = `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`;
-      showCoords(); drawSpots();
+      $(f.coords).value = `${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}`;
+      showCoords(f); drawSpots(f);
       msg.textContent += `, to within ${Math.round(p.accuracy)} m`;
     } catch (e) {
-      msg.textContent = `${e.message} Or paste coordinates.`; msg.className = "spoterr";
+      msg.textContent = `${e.message} Or tap a place.`; msg.className = "spoterr";
     } finally {
       b.disabled = false; b.textContent = "Use my location";
     }
   }
-
-  function openForm(c) {
-    editing = c ? c.id : null;
-    $("formTitle").textContent = c ? "Edit deer" : "Add a deer";
-    $("save").textContent = c ? "Save changes" : "Save deer";
-    const now = nowParts();
-    const sp = c ? (c.species || "") : (store.get("ds_species") || "Roe");
-    species = SPECIES.includes(sp) || !sp ? sp : "_other";
-    $("speciesOther").value = species === "_other" ? sp : "";
-    $("speciesOther").hidden = species !== "_other";
-    sex = c ? (c.sex || "") : ""; age = c ? (c.age || "") : ""; place = c ? (c.place || "") : "";
-    $("kg").value = c && num(c.kg) !== null ? c.kg : "";
-    $("date").value = c ? c.date : now.date;
-    $("time").value = c ? c.time : now.time;
-    $("coords").value = c && typeof c.lat === "number" ? `${c.lat}, ${c.lon}` : "";
-    $("ground").value = c ? (c.ground || "") : "";
-    $("distance").value = c && num(c.distance) !== null ? c.distance : "";
-    $("rifle").value = c ? (c.rifle || "") : (store.get("ds_rifle") || "");
-    $("notes").value = c ? (c.notes || "") : "";
-    $("photo").value = ""; photoBlob = null;
-    $("photoPreview").hidden = !(c && c.photo);
-    if (c && c.photo) $("photoPreview").src = GitHubStore.photoUrl(c.photo);
-    $("del").hidden = !c; $("confirmDel").hidden = true; $("formErr").textContent = "";
-    drawForm(); drawSpots(); showCoords();
-    $("form").hidden = false; $("openForm").hidden = true;
-    $("form").scrollIntoView({ behavior: "smooth", block: "start" });
+  function setSpot(f, x) {
+    $(f.coords).value = x && typeof x.lat === "number" ? `${x.lat}, ${x.lon}` : "";
+    $(f.ground).value = x ? (x.ground || "") : "";
+    drawSpots(f); showCoords(f);
   }
-  function closeForm() {
-    $("form").hidden = true; $("openForm").hidden = !canWrite; editing = null;
+
+  // One form open at a time.
+  const FORMS = ["deerForm", "sightForm", "sessForm"];
+  const editing = { deerForm: null, sightForm: null, sessForm: null };
+  function showForm(id) {
+    for (const f of FORMS) $(f).hidden = f !== id;
+    for (const el of $(id).querySelectorAll("[data-confirm]")) el.hidden = true;
+    $(id).querySelector("[data-del]").hidden = !editing[id];
+    $("starts").hidden = true;
+    $(id).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function closeForms() {
+    for (const f of FORMS) { $(f).hidden = true; editing[f] = null; }
+    $("starts").hidden = !canWrite;
+  }
+  // A new deer or sighting in a session: now if the session is still going, else at its last entry.
+  function presetFor(id) {
+    const x = id && sessionOf(id);
+    if (!x) return null;
+    const now = nowParts(), live = Date.now() >= x.start && Date.now() <= x.end + SLACK;
+    const at = x.events[x.events.length - 1] || x.trip;
+    const src = x.trip && typeof x.trip.lat === "number" ? x.trip : at;
+    return { date: live ? now.date : at.date, time: live ? now.time : at.time, lat: src.lat, lon: src.lon, ground: src.ground || "",
+      who: x.trip ? x.trip.who || [] : [] };
   }
 
   async function shrinkPhoto(file) {
@@ -637,66 +911,218 @@
       return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", 0.85));
     } catch { return file; } finally { URL.revokeObjectURL(url); }
   }
-
   function saveError(e) {
     if (e && e.code === "bad_key") return "GitHub refused the save. Check the key at the bottom of the page.";
     if (e && e.code === "local") return "This copy is opened from a computer, so it can't save.";
     return "That didn't save. Check your signal and try again.";
   }
-
-  async function save(ev) {
-    ev.preventDefault();
-    const err = $("formErr"); err.textContent = "";
-    let sp = currentSpecies();
-    if (!sp) { err.textContent = "Pick a species."; return; }
-    sp = sp.charAt(0).toUpperCase() + sp.slice(1);
-    if (!sex) { err.textContent = "Pick the sex."; return; }
-    const p = showCoords();
-    if (!p) { err.textContent = "Add where it was: tap Use my location, pick a spot or paste coordinates."; return; }
-    if (!$("date").value || !$("time").value) { err.textContent = "Add the date and time."; return; }
-    const kg = $("kg").value.trim(), dist = $("distance").value.trim();
-
-    const body = {
-      date: $("date").value, time: $("time").value, species: sp, sex, age,
-      kg: kg === "" ? null : Math.round(Number(kg) * 10) / 10,
-      lat: p.lat, lon: p.lon, ground: $("ground").value.trim(),
-      distance: dist === "" ? null : Math.round(Number(dist)), place, rifle: $("rifle").value.trim(),
-      notes: $("notes").value.trim(),
-    };
-    const old = editing ? culls.find(c => c.id === editing) : null;
-    // Conditions depend on time and place; clear them if either changed.
+  // Keep conditions if neither time nor place changed.
+  function withConditions(body, old) {
     const moved = !old || old.date !== body.date || old.time !== body.time || old.lat !== body.lat || old.lon !== body.lon;
     body.conditions = moved ? null : (old.conditions ?? null);
-    body.photo = old ? (old.photo || "") : "";
     body.created = old ? (old.created || new Date().toISOString()) : new Date().toISOString();
-
-    $("save").disabled = true; $("save").textContent = "Saving…";
+    return body;
+  }
+  async function saveDoc(coll, formId, body, btn, label, errId) {
+    $(btn).disabled = true; $(btn).textContent = "Saving…";
     try {
-      if (photoBlob && assets) {
-        try { body.photo = (await assets.upload(photoBlob)).id; }
-        catch { err.textContent = "The photo didn't upload, so the deer was saved without it."; }
-      }
-      const ref = editing ? db.collection("culls").doc(editing) : db.collection("culls").doc();
+      const ref = editing[formId] ? db.collection(coll).doc(editing[formId]) : db.collection(coll).doc();
       await ref.set(body);
-      store.set("ds_species", sp); store.set("ds_rifle", body.rifle);
-      if (!err.textContent) closeForm();
+      return true;
     } catch (e) {
-      err.textContent = saveError(e);
+      $(errId).textContent = saveError(e);
+      return false;
     } finally {
-      $("save").disabled = false; $("save").textContent = editing ? "Save changes" : "Save deer";
+      $(btn).disabled = false; $(btn).textContent = editing[formId] ? "Save changes" : label;
     }
   }
 
-  async function remove() {
-    if (!editing) return;
-    try { await db.collection("culls").doc(editing).delete(); closeForm(); }
-    catch { $("formErr").textContent = "That didn't delete. Try again."; }
+  // ---------- deer form (collection "culls")
+  const D = { species: "", sex: "", age: "", shot: "", who: [], other: false }, DSPOT = spot("d");
+  let photoBlob = null;
+  function drawDeer() {
+    peoplePicker(D, "dWhoChips", "dWhoOther", false, drawDeer);
+    speciesPicker(D, "dSpeciesChips", "dSpeciesOther", drawDeer);
+    const sexes = sexesFor(speciesValue(D, "dSpeciesOther"));
+    // Switching between stag/hind and buck/doe species: carry male/female across.
+    if (D.sex && !sexes.includes(D.sex)) D.sex = ["Stag", "Buck", "Male"].includes(D.sex) ? sexes[0] : sexes[1];
+    drawChips("dSexChips", sexes, D.sex, v => { D.sex = v; drawDeer(); });
+    drawChips("dAgeChips", AGES, D.age, v => { D.age = v; drawDeer(); });
+    drawChips("dShotChips", SHOTS, D.shot, v => { D.shot = v; drawDeer(); });
+    drawRifles();
+  }
+  function drawRifles() {
+    const seen = [];
+    for (const c of [...culls].sort(byNewest)) if (c.rifle && !seen.includes(c.rifle)) seen.push(c.rifle);
+    $("dRifleChips").replaceChildren(...seen.slice(0, 4).map(r => chip(r, $("dRifle").value === r, () => { $("dRifle").value = r; drawRifles(); })));
+  }
+  function openDeer(c, preset) {
+    editing.deerForm = c ? c.id : null;
+    $("deerTitle").textContent = c ? "Edit deer" : "Add a deer";
+    $("dSave").textContent = c ? "Save changes" : "Save deer";
+    const now = nowParts(), at = c || preset;
+    setPeople(D, "dWhoOther", c ? (c.shooter ? [c.shooter] : []) : [store.get("ds_shooter") || ""].filter(Boolean));
+    setSpecies(D, "dSpeciesOther", c ? (c.species || "") : (store.get("ds_species") || "Roe"));
+    D.sex = c ? (c.sex || "") : ""; D.age = c ? (c.age || "") : ""; D.shot = c ? (c.place || "") : "";
+    $("dKg").value = c && num(c.kg) !== null ? c.kg : "";
+    $("dDate").value = at ? at.date : now.date;
+    $("dTime").value = at ? at.time : now.time;
+    setSpot(DSPOT, at);
+    $("dDistance").value = c && num(c.distance) !== null ? c.distance : "";
+    $("dRifle").value = c ? (c.rifle || "") : (store.get("ds_rifle") || "");
+    $("dNotes").value = c ? (c.notes || "") : "";
+    $("photo").value = ""; photoBlob = null;
+    $("photoPreview").hidden = !(c && c.photo);
+    if (c && c.photo) $("photoPreview").src = GitHubStore.photoUrl(c.photo);
+    $("dErr").textContent = "";
+    drawDeer();
+    showForm("deerForm");
+  }
+  async function saveDeer(ev) {
+    ev.preventDefault();
+    const err = $("dErr"); err.textContent = "";
+    const shooter = peopleValue(D, "dWhoOther")[0] || "";
+    if (!shooter) { err.textContent = "Pick who shot it."; return; }
+    const sp = speciesValue(D, "dSpeciesOther");
+    if (!sp) { err.textContent = "Pick a species."; return; }
+    if (!D.sex) { err.textContent = "Pick the sex."; return; }
+    const p = showCoords(DSPOT);
+    if (!p) { err.textContent = "Add where it was: tap a place, Use my location, or paste coordinates."; return; }
+    if (!$("dDate").value || !$("dTime").value) { err.textContent = "Add the date and time."; return; }
+    const kg = $("dKg").value.trim(), dist = $("dDistance").value.trim();
+    const old = editing.deerForm ? culls.find(c => c.id === editing.deerForm) : null;
+    const body = withConditions({
+      date: $("dDate").value, time: $("dTime").value, shooter, species: sp, sex: D.sex, age: D.age,
+      kg: kg === "" ? null : Math.round(Number(kg) * 10) / 10,
+      lat: p.lat, lon: p.lon, ground: $("dGround").value.trim(),
+      distance: dist === "" ? null : Math.round(Number(dist)), place: D.shot, rifle: $("dRifle").value.trim(),
+      notes: $("dNotes").value.trim(), photo: old ? (old.photo || "") : "",
+    }, old);
+    if (photoBlob && assets) {
+      try { body.photo = (await assets.upload(photoBlob)).id; }
+      catch { err.textContent = "The photo didn't upload, so the deer was saved without it."; }
+    }
+    if (await saveDoc("culls", "deerForm", body, "dSave", "Save deer", "dErr")) {
+      store.set("ds_species", sp); store.set("ds_rifle", body.rifle); store.set("ds_shooter", shooter);
+      if (!err.textContent) closeForms();
+    }
   }
 
-  // ---------- conditions for each deer, worked out here and saved
+  // ---------- sighting form (collection "sightings")
+  const S = { species: "", sex: "", who: [], other: false }, SSPOT = spot("s");
+  function drawSight() {
+    speciesPicker(S, "sSpeciesChips", "sSpeciesOther", drawSight);
+    const sexes = [...sexesFor(speciesValue(S, "sSpeciesOther")), "Mixed"];
+    if (S.sex && !sexes.includes(S.sex)) S.sex = "";
+    drawChips("sSexChips", sexes, S.sex, v => { S.sex = v; drawSight(); });
+    drawChips("sCountChips", COUNTS, Number($("sCount").value), v => { $("sCount").value = v || ""; drawSight(); });
+    peoplePicker(S, "sWhoChips", "sWhoOther", true, drawSight);
+  }
+  function openSight(c, preset) {
+    editing.sightForm = c ? c.id : null;
+    $("sightTitle").textContent = c ? "Edit sighting" : "Add a sighting";
+    $("sSave").textContent = c ? "Save changes" : "Save sighting";
+    const now = nowParts(), at = c || preset;
+    setSpecies(S, "sSpeciesOther", c ? (c.species || "") : (store.get("ds_species") || "Roe"));
+    S.sex = c ? (c.sex || "") : "";
+    $("sCount").value = c ? (c.count || 1) : 1;
+    setPeople(S, "sWhoOther", c ? c.seenBy : preset && preset.who.length ? preset.who : listFrom("ds_seen_by"));
+    $("sDate").value = at ? at.date : now.date;
+    $("sTime").value = at ? at.time : now.time;
+    setSpot(SSPOT, at);
+    $("sNotes").value = c ? (c.notes || "") : "";
+    $("sErr").textContent = "";
+    drawSight();
+    showForm("sightForm");
+  }
+  async function saveSight(ev) {
+    ev.preventDefault();
+    const err = $("sErr"); err.textContent = "";
+    const sp = speciesValue(S, "sSpeciesOther");
+    if (!sp) { err.textContent = "Pick a species."; return; }
+    const count = Math.round(Number($("sCount").value));
+    if (!(count >= 1)) { err.textContent = "Add how many you saw."; return; }
+    const seenBy = peopleValue(S, "sWhoOther");
+    if (!seenBy.length) { err.textContent = "Pick who saw them."; return; }
+    const p = showCoords(SSPOT);
+    if (!p) { err.textContent = "Add where: tap a place, Use my location, or paste coordinates."; return; }
+    if (!$("sDate").value || !$("sTime").value) { err.textContent = "Add the date and time."; return; }
+    const old = editing.sightForm ? sightings.find(c => c.id === editing.sightForm) : null;
+    const body = withConditions({
+      date: $("sDate").value, time: $("sTime").value, species: sp, count, sex: S.sex, seenBy,
+      lat: p.lat, lon: p.lon, ground: $("sGround").value.trim(), notes: $("sNotes").value.trim(),
+    }, old);
+    if (await saveDoc("sightings", "sightForm", body, "sSave", "Save sighting", "sErr")) {
+      store.set("ds_species", sp); store.set("ds_seen_by", JSON.stringify(seenBy));
+      closeForms();
+    }
+  }
+
+  // ---------- session form (collection "sessions")
+  const E = { who: [], other: false }, ESPOT = spot("e");
+  function drawSess() {
+    const box = $("eHourChips"); box.replaceChildren();
+    for (const h of HOURS) box.append(chip(hoursText(h), Number($("eHours").value) === h, () => { $("eHours").value = h; drawSess(); }));
+    const end = endTime($("eTime").value, $("eHours").value);
+    $("eEnd").textContent = end ? `Until ${end}` : "";
+    peoplePicker(E, "eWhoChips", "eWhoOther", true, drawSess);
+  }
+  function openSess(t) {
+    editing.sessForm = t && t.id ? t.id : null;
+    $("sessTitle").textContent = editing.sessForm ? "Edit session" : "Log a session";
+    $("eSave").textContent = editing.sessForm ? "Save changes" : "Save session";
+    const now = nowParts();
+    $("eDate").value = t ? t.date : now.date;
+    $("eTime").value = t ? t.time : now.time;
+    $("eHours").value = t ? (t.hours ?? "") : (store.get("ds_sess_hours") || "");
+    setPeople(E, "eWhoOther", t ? t.who : listFrom("ds_sess_who"));
+    setSpot(ESPOT, t);
+    $("eNotes").value = t ? (t.notes || "") : "";
+    $("eErr").textContent = "";
+    drawSess();
+    showForm("sessForm");
+  }
+  function draftFromEvents(id) {
+    // Turn a time-grouped session into a logged one: start at the first entry, round the hours up.
+    const x = sessionOf(id), f = x.events[0];
+    const hours = Math.max(1, Math.ceil((x.end - x.start) / 3600e3 * 2) / 2);
+    const who = [...new Set(x.events.flatMap(c => isSighting(c) ? c.seenBy || [] : c.shooter ? [c.shooter] : []))];
+    return { date: f.date, time: f.time, hours, who, lat: f.lat, lon: f.lon, ground: f.ground || "", notes: "" };
+  }
+  async function saveSess(ev) {
+    ev.preventDefault();
+    const err = $("eErr"); err.textContent = "";
+    if (!$("eDate").value || !$("eTime").value) { err.textContent = "Add the date and start time."; return; }
+    const hours = Number($("eHours").value);
+    if (!(hours > 0 && hours <= 24)) { err.textContent = "Add how many hours you were out."; return; }
+    const who = peopleValue(E, "eWhoOther");
+    if (!who.length) { err.textContent = "Pick who went."; return; }
+    const p = showCoords(ESPOT);
+    if (!p) { err.textContent = "Add where: tap a place, Use my location, or paste coordinates."; return; }
+    const old = editing.sessForm ? sessionsList.find(t => t.id === editing.sessForm) : null;
+    const body = withConditions({
+      date: $("eDate").value, time: $("eTime").value, hours, who,
+      lat: p.lat, lon: p.lon, ground: $("eGround").value.trim(), notes: $("eNotes").value.trim(),
+    }, old);
+    if (await saveDoc("sessions", "sessForm", body, "eSave", "Save session", "eErr")) {
+      store.set("ds_sess_hours", String(hours)); store.set("ds_sess_who", JSON.stringify(who));
+      closeForms();
+    }
+  }
+
+  // ---------- delete, for whichever form is open
+  const COLL = { deerForm: "culls", sightForm: "sightings", sessForm: "sessions" };
+  async function removeFrom(formId) {
+    if (!editing[formId]) return;
+    try { await db.collection(COLL[formId]).doc(editing[formId]).delete(); closeForms(); }
+    catch { $(formId).querySelector(".status").textContent = "That didn't delete. Try again."; }
+  }
+
+  // ---------- conditions for each entry, worked out here and saved
   let filling = false;
   const tried = new Set();
   function needsConditions(d) {
+    if (typeof d.lat !== "number") return false;
     if (new Date(`${d.date}T${d.time}`) > new Date()) return false;       // not happened yet
     const k = d.conditions;
     if (!k || !("rating" in k)) return true;                              // none yet, or from before the rating
@@ -707,14 +1133,17 @@
     if (!canWrite || filling) return;
     filling = true;
     try {
-      const todo = culls.filter(d => !tried.has(d.id) && needsConditions(d)).slice(0, 10);
-      const patches = {};
-      for (const d of todo) {
-        tried.add(d.id);
-        try { patches[d.id] = { conditions: await Conditions.forCull(d.date, d.time, d.lat, d.lon) }; }
-        catch (e) { console.warn("conditions failed for", d.id, e); }
+      for (const [name, list] of [["culls", culls], ["sightings", sightings], ["sessions", sessionsList]]) {
+        const todo = list.filter(d => !tried.has(d.id) && needsConditions(d)).slice(0, 10);
+        if (!todo.length) continue;
+        const patches = {};
+        for (const d of todo) {
+          tried.add(d.id);
+          try { patches[d.id] = { conditions: await Conditions.forCull(d.date, d.time, d.lat, d.lon) }; }
+          catch (e) { console.warn("conditions failed for", d.id, e); }
+        }
+        if (Object.keys(patches).length) await db.collection(name).updateMany(patches);
       }
-      if (Object.keys(patches).length) await db.collection("culls").updateMany(patches);
     } catch (e) {
       console.warn("saving conditions failed", e);
     } finally {
@@ -729,7 +1158,7 @@
     const has = !!GitHubStore.token.get();
     const ok = await GitHubStore.checkKey();
     canWrite = !!R && has && ok !== false;
-    $("openForm").hidden = !canWrite || !$("form").hidden;
+    $("starts").hidden = !canWrite || FORMS.some(f => !$(f).hidden);
     assets = canWrite ? GitHubStore.assets : null;
     $("photoSet").hidden = !assets;
     $("keyForget").hidden = !has;
@@ -740,25 +1169,37 @@
       ok === null ? "Key saved. Couldn't check it just now." : "Set up. This phone can save to the log.";
     $("keyState").className = ok === false ? "status" : "sub";
     // Once it works, shrink to one quiet line. Otherwise keep it open and obvious.
-    const done = canWrite;
-    $("setup").classList.toggle("done", done);
-    $("setup").open = !done;
-    $("setupSum").textContent = done ? "Saving is set up on this phone" : "Saving from this phone";
+    $("setup").classList.toggle("done", canWrite);
+    $("setup").open = !canWrite;
+    $("setupSum").textContent = canWrite ? "Saving is set up on this phone" : "Saving from this phone";
     render();
     fillConditions();
   }
 
   // ---------- wiring
-  $("openForm").addEventListener("click", () => openForm(null));
-  $("cancel").addEventListener("click", closeForm);
-  $("form").addEventListener("submit", save);
-  $("gps").addEventListener("click", formHere);
-  $("coords").addEventListener("input", () => { showCoords(); drawSpots(); });
-  $("speciesOther").addEventListener("input", drawForm);
-  $("rifle").addEventListener("input", drawRifles);
-  $("del").addEventListener("click", () => { $("confirmDel").hidden = false; });
-  $("delNo").addEventListener("click", () => { $("confirmDel").hidden = true; });
-  $("delYes").addEventListener("click", remove);
+  $("openDeer").addEventListener("click", () => openDeer(null));
+  $("openSight").addEventListener("click", () => openSight(null));
+  $("openSess").addEventListener("click", () => openSess(null));
+  $("deerForm").addEventListener("submit", saveDeer);
+  $("sightForm").addEventListener("submit", saveSight);
+  $("sessForm").addEventListener("submit", saveSess);
+  for (const f of FORMS) {
+    const form = $(f);
+    form.querySelector("[data-cancel]").addEventListener("click", closeForms);
+    form.querySelector("[data-del]").addEventListener("click", () => { form.querySelector("[data-confirm]").hidden = false; });
+    form.querySelector("[data-del-no]").addEventListener("click", () => { form.querySelector("[data-confirm]").hidden = true; });
+    form.querySelector("[data-del-yes]").addEventListener("click", () => removeFrom(f));
+  }
+  for (const f of [DSPOT, SSPOT, ESPOT]) {
+    $(f.gps).addEventListener("click", () => formHere(f));
+    $(f.coords).addEventListener("input", () => { showCoords(f); drawSpots(f); });
+  }
+  $("dSpeciesOther").addEventListener("input", drawDeer);
+  $("sSpeciesOther").addEventListener("input", drawSight);
+  $("dRifle").addEventListener("input", drawRifles);
+  $("sCount").addEventListener("input", drawSight);
+  $("eTime").addEventListener("input", drawSess);
+  $("eHours").addEventListener("input", drawSess);
   $("photo").addEventListener("change", async () => {
     const f = $("photo").files[0];
     if (!f) { photoBlob = null; return; }
@@ -766,8 +1207,14 @@
     $("photoPreview").src = URL.createObjectURL(photoBlob); $("photoPreview").hidden = false;
   });
   $("list").addEventListener("click", e => {
-    const id = e.target.closest("[data-edit]")?.dataset.edit;
-    if (id) openForm(culls.find(c => c.id === id));
+    const get = attr => e.target.closest(`[${attr}]`)?.getAttribute(attr);
+    let id;
+    if ((id = get("data-edit-deer"))) openDeer(culls.find(c => c.id === id));
+    else if ((id = get("data-edit-sight"))) openSight(sightings.find(c => c.id === id));
+    else if ((id = get("data-edit-sess"))) openSess(sessionsList.find(t => t.id === id));
+    else if ((id = get("data-detail"))) openSess(draftFromEvents(id));
+    else if ((id = get("data-add-deer"))) openDeer(null, presetFor(id));
+    else if ((id = get("data-add-sight"))) openSight(null, presetFor(id));
   });
   $("keySave").addEventListener("click", async () => {
     const v = $("keyIn").value.trim();
@@ -791,17 +1238,17 @@
     GitHubStore.token.set(linkKey.trim());
     history.replaceState(null, "", location.pathname + location.search);
   }
-  if (!nowAt) nowAt = { ...NOW_PLACES[0], label: `For ${NOW_PLACES[0].name}.` };
+  if (!nowAt) nowAt = { ...PLACES[0], label: `For ${PLACES[0].name}.` };
   else if (!nowAt.name) nowAt.label = "For the last place you checked. Tap Use my location to update.";
   drawNowPlaces();
   refreshNow();
-  db.collection("culls").onSnapshot(snap => {
-    culls = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    render(); fillConditions();
-  }, () => {
+  const lost = () => {
     $("status").hidden = false;
     $("status").textContent = "Couldn't load the log. Check your signal, then reload the page.";
-  });
+  };
+  db.collection("culls").onSnapshot(snap => { culls = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); fillConditions(); }, lost);
+  db.collection("sightings").onSnapshot(snap => { sightings = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); fillConditions(); }, lost);
+  db.collection("sessions").onSnapshot(snap => { sessionsList = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); fillConditions(); }, lost);
   showKey();
 })();
 </script>
